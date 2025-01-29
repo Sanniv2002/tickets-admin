@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { getTickets, verifyPayment, markTicketGiven, sendEmail, searchTickets } from '../services/api';
+import { getTickets, verifyPayment, markTicketGiven, sendEmail, searchTickets, uploadPaymentProof, markEntry } from '../services/api';
 import { Ticket, PaginatedResponse } from '../types/ticket';
 import {
   X, Mail, TicketIcon, CreditCard, LogOut,
   Search, ChevronLeft, ChevronRight,
-  Loader2, Eye, XCircle, Filter, ChevronDown, Hash
+  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen
 } from 'lucide-react';
 
 type FilterType = 'all' | 'given' | 'unverified';
@@ -25,7 +25,9 @@ const TicketList = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [ticketNumberInput, setTicketNumberInput] = useState<string>('');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-  const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const page = parseInt(searchParams.get('page') || '1');
 
@@ -37,6 +39,10 @@ const TicketList = () => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         clearSearch();
+      }
+      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        inputRef.current?.focus();
       }
     };
 
@@ -125,7 +131,7 @@ const TicketList = () => {
       toast.success('Ticket marked as given');
       setTickets((prevTickets) =>
         prevTickets.map((ticket) =>
-          ticket._id === ticketId ? { ...ticket, ticket_given: true } : ticket
+          ticket._id === ticketId ? { ...ticket, ticket_given: true, ticket_number: ticketNumberInput } : ticket
         )
       );
       setTicketNumberInput('');
@@ -143,6 +149,23 @@ const TicketList = () => {
       toast.success('Email sent successfully');
     } catch (error) {
       toast.error('Failed to send email');
+    }
+  };
+
+  const handleMarkEntry = async (ticketId: string) => {
+    try {
+      setLoadingState(ticketId, true);
+      await markEntry(ticketId);
+      toast.success('Entry marked successfully');
+      setTickets((prevTickets) =>
+        prevTickets.map((ticket) =>
+          ticket._id === ticketId ? { ...ticket, entry_marked: true } : ticket
+        )
+      );
+    } catch (error) {
+      toast.error('Failed to mark entry');
+    } finally {
+      setLoadingState(ticketId, false);
     }
   };
 
@@ -173,6 +196,29 @@ const TicketList = () => {
     }
   };
 
+  const getPaymentStatusBadge = (ticket: Ticket) => {
+    if (!ticket.payment_verified && ticket.stage === '1') {
+      return (
+        <span className="px-2 py-1 rounded text-sm bg-red-500/20 text-red-400">
+          Payment Pending
+        </span>
+      );
+    } else if (!ticket.payment_verified && ticket.stage === '2') {
+      return (
+        <span className="px-2 py-1 rounded text-sm bg-yellow-500/20 text-yellow-400">
+          Payment Verification Pending
+        </span>
+      );
+    } else if (ticket.payment_verified) {
+      return (
+        <span className="px-2 py-1 rounded text-sm bg-green-500/20 text-green-400">
+          Payment Verified
+        </span>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -191,6 +237,7 @@ const TicketList = () => {
           <div className="flex gap-4">
             <div className="relative flex-1">
               <input
+                ref={inputRef}
                 type="text"
                 placeholder="Search by name, email, or roll number... (Press Enter to search, Esc to clear)"
                 value={searchTerm}
@@ -219,7 +266,7 @@ const TicketList = () => {
                 </div>
                 <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {isFilterOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-zinc-800 ring-1 ring-black ring-opacity-5 z-10">
                   <div className="py-1">
@@ -230,9 +277,8 @@ const TicketList = () => {
                           setActiveFilter(filter);
                           setIsFilterOpen(false);
                         }}
-                        className={`block w-full text-left px-4 py-2 text-sm hover:bg-zinc-700 ${
-                          activeFilter === filter ? 'bg-zinc-700' : ''
-                        }`}
+                        className={`block w-full text-left px-4 py-2 text-sm hover:bg-zinc-700 ${activeFilter === filter ? 'bg-zinc-700' : ''
+                          }`}
                       >
                         {getFilterLabel(filter)}
                       </button>
@@ -268,9 +314,8 @@ const TicketList = () => {
             {filteredTickets.map((ticket) => (
               <div
                 key={ticket._id}
-                className={`bg-zinc-900 rounded-lg p-6 ${
-                  ticket.stage === '2' ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-500'
-                }`}
+                className={`bg-zinc-900 rounded-lg p-6 ${ticket.stage === '2' ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-500'
+                  }`}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -295,14 +340,9 @@ const TicketList = () => {
                       </div>
                     </div>
                     <div className="mt-4 flex items-center space-x-4 flex-wrap gap-y-2">
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        ticket.payment_verified ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        {ticket.payment_verified ? 'Payment Verified' : 'Payment Pending'}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        ticket.ticket_given ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                      }`}>
+                      {getPaymentStatusBadge(ticket)}
+                      <span className={`px-2 py-1 rounded text-sm ${ticket.ticket_given ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
                         {ticket.ticket_given ? 'Ticket Given' : 'Ticket Pending'}
                       </span>
                       {ticket.ticket_number && (
@@ -321,6 +361,48 @@ const TicketList = () => {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-4">
+                  {!ticket.payment_proof && ticket.stage === '1' && (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id={`file-upload-${ticket._id}`}
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              setLoadingStates(prev => ({ ...prev, [`upload-${ticket._id}`]: true }));
+                              const { id, payment_proof } = await uploadPaymentProof(ticket._id!, file);
+                              toast.success('Payment proof uploaded successfully');
+                              setTickets((prevTickets) =>
+                                prevTickets.map((ticket) =>
+                                  ticket._id === id ? { ...ticket, payment_proof, stage: "2" } : ticket
+                                )
+                              );
+                            } catch (error) {
+                              toast.error('Failed to upload payment proof');
+                            } finally {
+                              setLoadingStates(prev => ({ ...prev, [`upload-${ticket._id}`]: false }));
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => document.getElementById(`file-upload-${ticket._id}`)?.click()}
+                        disabled={loadingStates[`upload-${ticket._id}`]}
+                        className="flex items-center px-4 py-2 bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        {loadingStates[`upload-${ticket._id}`] ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4 mr-2" />
+                        )}
+                        Upload Payment Proof
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     onClick={() => handleVerifyPayment(ticket._id!)}
                     disabled={ticket.payment_verified || loadingStates[ticket._id!]}
@@ -333,7 +415,7 @@ const TicketList = () => {
                     )}
                     Verify Payment
                   </button>
-                  
+
                   {selectedTicketId === ticket._id ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -375,16 +457,41 @@ const TicketList = () => {
                       Mark Ticket Given
                     </button>
                   )}
-                  
-                  <button
-                    onClick={() => handleSendEmail(ticket._id!)}
-                    className="flex items-center px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700"
-                  >
-                    <Mail className="w-4 h-4 mr-2" />
-                    Send Email
-                  </button>
-                  
-                  {ticket.payment_proof && !ticket.payment_verified && (
+
+                  {ticket.payment_verified && ticket.ticket_given && !ticket.entry_marked && (
+                    <button
+                      onClick={() => handleMarkEntry(ticket._id!)}
+                      disabled={loadingStates[ticket._id!]}
+                      className="flex items-center px-4 py-2 bg-orange-600 rounded-md hover:bg-orange-700 disabled:opacity-50"
+                    >
+                      {loadingStates[ticket._id!] ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <DoorOpen className="w-4 h-4 mr-2" />
+                      )}
+                      Mark Entry
+                    </button>
+                  )}
+
+                  {ticket.entry_marked && (
+                    <span
+                      className="px-2 py-1 rounded text-sm bg-orange-500/20 text-orange-400 flex items-center">
+                      <DoorOpen className="w-3 h-3 mr-1" />
+                      Entry Marked
+                    </span>
+                  )}
+
+                  {ticket.ticket_number && (
+                    <button
+                      onClick={() => handleSendEmail(ticket._id!)}
+                      className="flex items-center px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Email
+                    </button>
+                  )}
+
+                  {ticket.payment_proof && (
                     <button
                       onClick={() => setSelectedImage(ticket.payment_proof as string)}
                       className="flex items-center px-4 py-2 bg-zinc-700 rounded-md hover:bg-zinc-600"

@@ -22,9 +22,7 @@ export const getTickets = async (page: number): Promise<PaginatedResponse> => {
   return response.data;
 };
 
-export const searchTickets = async (
-  query: string
-): Promise<any>=> {
+export const searchTickets = async (query: string): Promise<any>=> {
   const response = await api.get(`admin/tickets/fuzzy`, {
     params: {
       query,
@@ -49,5 +47,23 @@ export const sendEmail = async (ticketId: string, templateId: string) => {
   const response = await api.post(`/admin/send-email/${ticketId}`, {
     templateId,
   });
+  return response.data;
+};
+
+export const uploadPaymentProof = async (ticketId: string, file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('id', ticketId);
+
+  const response = await api.post('/admin/tickets/finalize', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const markEntry = async (ticketId: string) => {
+  const response = await api.post(`/admin/toggle-entry-marked/${ticketId}`);
   return response.data;
 };

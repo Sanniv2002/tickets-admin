@@ -15,6 +15,7 @@ export interface Ticket {
   sheetId?: string;
   score?: number;
   ticket_number?: string;
+  entry_marked?: boolean;
 }
 
 export interface PaginatedResponse {
