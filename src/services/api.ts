@@ -43,8 +43,13 @@ export const markTicketGiven = async (ticketId: string, ticketNumber: string) =>
   return response.data;
 };
 
-export const sendEmail = async (ticketId: string, templateId: string) => {
-  const response = await api.post(`/admin/send-email/${ticketId}`, {
+export const getEmailTemplates = async () => {
+  const response = await api.get('/admin/email-templates');
+  return response.data.templates;
+};
+
+export const sendBulkEmails = async (templateId: string) => {
+  const response = await api.post('/admin/send-bulk-emails', {
     templateId,
   });
   return response.data;
