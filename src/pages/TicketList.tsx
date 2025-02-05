@@ -1,15 +1,37 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, getEmailTemplates, sendBulkEmails, logout } from '../services/api';
-import { Ticket, PaginatedResponse, EmailTemplate } from '../types/ticket';
+import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, getEmailTemplates, sendBulkEmails, logout, whoami } from '../services/api';
+import { Ticket, PaginatedResponse, EmailTemplate, User } from '../types/ticket';
 import {
   X, TicketIcon, CreditCard, LogOut,
   Search, ChevronLeft, ChevronRight,
-  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen, Mail
+  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen, Mail,
+  Lock
 } from 'lucide-react';
 
 type FilterType = 'all' | 'given' | 'unverified';
+
+const SkeletonTicket = () => (
+  <div className="bg-zinc-900 rounded-lg p-6 border-l-4 border-yellow-500 animate-pulse">
+    <div className="space-y-4">
+      <div className="h-6 w-48 bg-zinc-800 rounded"></div>
+      <div className="h-4 w-32 bg-zinc-800 rounded"></div>
+      <div className="grid grid-cols-2 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="space-y-2">
+            <div className="h-3 w-24 bg-zinc-800 rounded"></div>
+            <div className="h-4 w-32 bg-zinc-800 rounded"></div>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <div className="h-8 w-24 bg-zinc-800 rounded"></div>
+        <div className="h-8 w-32 bg-zinc-800 rounded"></div>
+      </div>
+    </div>
+  </div>
+);
 
 const TicketList = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -30,15 +52,22 @@ const TicketList = () => {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [sendingEmails, setSendingEmails] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
   const page = parseInt(searchParams.get('page') || '1');
 
   useEffect(() => {
+    fetchUser()
     fetchTickets();
     fetchEmailTemplates();
   }, [page, activeSearch]);
+
+  const fetchUser = async () => {
+    const userData = await whoami();
+    setUser(userData);
+  };
 
   const fetchEmailTemplates = async () => {
     try {
@@ -257,9 +286,13 @@ const TicketList = () => {
           <h1 className="text-3xl font-bold text-red-600">Ticket Management</h1>
           <div className="flex gap-4">
             <button
-              onClick={() => setShowEmailModal(true)}
-              className="flex items-center px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700"
+              onClick={() => user?.isSuperAdmin ? setShowEmailModal(true) : toast.error('Only superadmins can send bulk emails')}
+              disabled={!user?.isSuperAdmin}
+              className="group relative flex items-center px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
             >
+              {!user?.isSuperAdmin && (
+                <Lock className="w-4 h-4 absolute right-2" />
+              )}
               <Mail className="w-4 h-4 mr-2" />
               Send Bulk Emails
             </button>
@@ -346,8 +379,10 @@ const TicketList = () => {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+          <div className="space-y-6">
+            {[1, 2, 3, 4].map((i) => (
+              <SkeletonTicket key={i} />
+            ))}
           </div>
         ) : (
           <div className="space-y-6">

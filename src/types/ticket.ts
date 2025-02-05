@@ -54,3 +54,7 @@ export interface Offer {
   active: boolean;
   price: string;
 }
+
+export interface User {
+  isSuperAdmin: boolean;
+}

@@ -1,9 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, Users, CreditCard, IndianRupee, Plus, Loader2, X, Trash2 } from 'lucide-react';
-import { getAnalytics, getOffers, addOffer, setActiveOffer, deleteOffer } from '../services/api';
-import { Analytics, Offer } from '../types/ticket';
+import { Ticket, Users, CreditCard, IndianRupee, Plus, Loader2, X, Trash2, Lock } from 'lucide-react';
+import { getAnalytics, getOffers, addOffer, setActiveOffer, deleteOffer, whoami } from '../services/api';
+import { Analytics, Offer, User } from '../types/ticket';
 import toast from 'react-hot-toast';
+
+const SkeletonCard = () => (
+  <div className="bg-zinc-900 rounded-lg p-6 animate-pulse">
+    <div className="h-8 w-24 bg-zinc-800 rounded mb-4"></div>
+    <div className="h-4 w-48 bg-zinc-800 rounded mb-2"></div>
+    <div className="space-y-2">
+      <div className="h-4 w-32 bg-zinc-800 rounded"></div>
+      <div className="h-4 w-40 bg-zinc-800 rounded"></div>
+    </div>
+  </div>
+);
+
+const SkeletonStats = () => (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="bg-zinc-900 rounded-lg p-6 animate-pulse">
+        <div className="w-12 h-12 bg-zinc-800 rounded-lg mb-4"></div>
+        <div className="h-6 w-16 bg-zinc-800 rounded mb-2"></div>
+        <div className="h-4 w-24 bg-zinc-800 rounded"></div>
+      </div>
+    ))}
+  </div>
+);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -13,8 +36,15 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [newOffer, setNewOffer] = useState({ offer: '', price: '' });
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    const fetchUser = async () => {
+      const userData = await whoami();
+      setUser(userData);
+    };
+    fetchUser();
     fetchAnalytics();
     fetchOffers();
   }, []);
@@ -34,11 +64,17 @@ const Dashboard = () => {
       setOffers(data);
     } catch (error) {
       toast.error('Failed to fetch offers');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleAddOffer = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.isSuperAdmin) {
+      toast.error('Only superadmins can add offers');
+      return;
+    }
     setIsLoading(true);
     try {
       await addOffer(newOffer);
@@ -58,6 +94,10 @@ const Dashboard = () => {
   };
 
   const handleSetActiveOffer = async (offerId: string, currentOfferId: string) => {
+    if (!user?.isSuperAdmin) {
+      toast.error('Only superadmins can modify offers');
+      return;
+    }
     try {
       setLoadingState(`activate-${offerId}`, true);
       await setActiveOffer(offerId, currentOfferId);
@@ -71,6 +111,10 @@ const Dashboard = () => {
   };
 
   const handleDeleteOffer = async (offerId: string) => {
+    if (!user?.isSuperAdmin) {
+      toast.error('Only superadmins can delete offers');
+      return;
+    }
     try {
       setLoadingState(`delete-${offerId}`, true);
       await deleteOffer(offerId);
@@ -110,119 +154,153 @@ const Dashboard = () => {
     <div className="p-8">
       <h1 className="text-3xl font-bold text-white mb-8">Dashboard</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-zinc-900 rounded-lg p-6">
-            <div className={`inline-flex p-3 rounded-lg ${stat.color} mb-4`}>
-              <stat.icon className="w-6 h-6" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">{stat.value}</h2>
-            <p className="text-gray-400">{stat.title}</p>
+      {loading ? (
+        <>
+          <SkeletonStats />
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Ticket Pricing Card */}
-        <div className="bg-zinc-900 rounded-lg p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="inline-flex p-3 rounded-lg bg-yellow-500/20 text-yellow-400 mb-4">
-                <IndianRupee className="w-6 h-6" />
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="bg-zinc-900 rounded-lg p-6">
+                <div className={`inline-flex p-3 rounded-lg ${stat.color} mb-4`}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">{stat.value}</h2>
+                <p className="text-gray-400">{stat.title}</p>
               </div>
-              <h2 className="text-xl font-bold text-white">Ticket Pricing</h2>
-            </div>
-            <button
-              onClick={() => setShowOfferModal(true)}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Offer
-            </button>
+            ))}
           </div>
 
-          <div className="mt-6">
-            {/* Active Offer */}
-            {activeOffer && (
-              <div className="mb-4">
-                <p className="text-sm text-gray-400 mb-2">Current Active Offer</p>
-                <div className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <div>
-                    <p className="text-white font-medium">{activeOffer.offer}</p>
-                    <p className="text-2xl font-bold text-white">₹{activeOffer.price}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-zinc-900 rounded-lg p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="inline-flex p-3 rounded-lg bg-yellow-500/20 text-yellow-400 mb-4">
+                    <IndianRupee className="w-6 h-6" />
                   </div>
-                  <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm">
-                    Active
-                  </span>
+                  <h2 className="text-xl font-bold text-white">Ticket Pricing</h2>
+                </div>
+                <button
+                  onClick={() => user?.isSuperAdmin ? setShowOfferModal(true) : toast.error('Only superadmins can add offers')}
+                  className="group relative px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                  disabled={!user?.isSuperAdmin}
+                >
+                  {!user?.isSuperAdmin && (
+                    <Lock className="w-4 h-4 absolute right-2 top-1/2 transform -translate-y-1/2" />
+                  )}
+                  <Plus className="w-4 h-4" />
+                  <span className={!user?.isSuperAdmin ? 'mr-6' : ''}>Add Offer</span>
+                  {!user?.isSuperAdmin && (
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      Only superadmins can add offers
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              <div className="mt-6">
+                {activeOffer && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-400 mb-2">Current Active Offer</p>
+                    <div className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div>
+                        <p className="text-white font-medium">{activeOffer.offer}</p>
+                        <p className="text-2xl font-bold text-white">₹{activeOffer.price}</p>
+                      </div>
+                      <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm">
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">Available Offers</p>
+                  <div className="space-y-2 max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800 pr-2">
+                    {offers
+                      .filter(offer => !offer.active)
+                      .map((offer) => (
+                        <div key={offer._id} className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg">
+                          <div>
+                            <p className="text-white font-medium">{offer.offer}</p>
+                            <p className="text-xl font-bold text-white">₹{offer.price}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSetActiveOffer(offer._id, activeOffer?._id || '')}
+                              disabled={loadingStates[`activate-${offer._id}`] || !user?.isSuperAdmin}
+                              className="group relative px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                              {loadingStates[`activate-${offer._id}`] ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  {!user?.isSuperAdmin && (
+                                    <Lock className="w-4 h-4" />
+                                  )}
+                                  Activate
+                                </>
+                              )}
+                              {!user?.isSuperAdmin && (
+                                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                  Only superadmins can activate offers
+                                </span>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteOffer(offer._id)}
+                              disabled={loadingStates[`delete-${offer._id}`] || !user?.isSuperAdmin}
+                              className="group relative p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {loadingStates[`delete-${offer._id}`] ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Trash2 className="w-4 h-4" />
+                                </>
+                              )}
+                              {!user?.isSuperAdmin && (
+                                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                  Only superadmins can delete offers
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Other Offers */}
-            <div>
-              <p className="text-sm text-gray-400 mb-2">Available Offers</p>
-              <div className="space-y-2 max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800 pr-2">
-                {offers
-                  .filter(offer => !offer.active)
-                  .map((offer) => (
-                    <div key={offer._id} className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg">
-                      <div>
-                        <p className="text-white font-medium">{offer.offer}</p>
-                        <p className="text-xl font-bold text-white">₹{offer.price}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleSetActiveOffer(offer._id, activeOffer?._id || '')}
-                          disabled={loadingStates[`activate-${offer._id}`]}
-                          className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                          {loadingStates[`activate-${offer._id}`] ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            'Activate'
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteOffer(offer._id)}
-                          disabled={loadingStates[`delete-${offer._id}`]}
-                          className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {loadingStates[`delete-${offer._id}`] ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+            <div className="bg-zinc-900 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => navigate('/tickets')}
+                  className="flex items-center justify-center px-4 py-3 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Ticket className="w-5 h-5 mr-2" />
+                  Manage Tickets
+                </button>
+                <button
+                  className="flex items-center justify-center px-4 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  View Attendees
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        </>
+      )}
 
-        {/* Quick Actions Card */}
-        <div className="bg-zinc-900 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => navigate('/tickets')}
-              className="flex items-center justify-center px-4 py-3 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <Ticket className="w-5 h-5 mr-2" />
-              Manage Tickets
-            </button>
-            <button
-              className="flex items-center justify-center px-4 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
-            >
-              <Users className="w-5 h-5 mr-2" />
-              View Attendees
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Add Offer Modal */}
       {showOfferModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-zinc-900 rounded-lg p-6 max-w-md w-full">

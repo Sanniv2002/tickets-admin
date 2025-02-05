@@ -34,15 +34,15 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         location.pathname === to ? 'bg-zinc-800 text-white' : ''
       }`}
     >
-      <Icon className="w-5 h-5" />
-      <span className={`transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 -translate-x-full' : 'opacity-100'}`}>
+      <Icon className="w-5 h-5 min-w-[20px]" />
+      <span className={`transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>
         {label}
       </span>
     </Link>
   );
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
@@ -74,7 +74,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         `}
       >
         <div className="hidden lg:flex h-16 items-center justify-between px-4">
-          <h1 className={`text-xl font-bold text-red-600 transition-all duration-300 ${!isSidebarOpen ? 'opacity-0' : 'opacity-100'}`}>
+          <h1 className={`text-xl font-bold text-red-600 transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>
             TedX Admin
           </h1>
           <button
@@ -101,8 +101,8 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
             onClick={handleLogout}
             className={`w-full flex items-center gap-4 px-4 py-3 text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-300`}
           >
-            <LogOut className="w-5 h-5" />
-            <span className={`transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 -translate-x-full' : 'opacity-100'}`}>
+            <LogOut className="w-5 h-5 min-w-[20px]" />
+            <span className={`transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>
               Logout
             </span>
           </button>
