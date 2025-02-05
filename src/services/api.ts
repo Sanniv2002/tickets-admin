@@ -1,16 +1,39 @@
 import axios from "axios";
-import { PaginatedResponse } from "../types/ticket";
+import { Offer, PaginatedResponse, TicketPricing } from "../types/ticket";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,
 });
 
 export const login = async (email: string, password: string) => {
-  if (email === "admin@tedx.com" && password === "admin123") {
-    localStorage.setItem("token", "mock-token");
-    return true;
+  try {
+    const response = await api.post("/login", { email, password });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error("Login failed");
+    }
+  } catch (error) {
+    console.error("Login failed:", error);
+    throw error;
   }
-  throw new Error("Invalid credentials");
+};
+
+export const logout = async () => {
+  try {
+    const response = await api.post("/logout");
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error("Logout failed");
+    }
+  } catch (error) {
+    console.error("Logout failed:", error);
+    throw error;
+  }
 };
 
 export const getTickets = async (page: number): Promise<PaginatedResponse> => {
@@ -22,7 +45,7 @@ export const getTickets = async (page: number): Promise<PaginatedResponse> => {
   return response.data;
 };
 
-export const searchTickets = async (query: string): Promise<any>=> {
+export const searchTickets = async (query: string): Promise<any> => {
   const response = await api.get(`admin/tickets/fuzzy`, {
     params: {
       query,
@@ -36,20 +59,23 @@ export const verifyPayment = async (ticketId: string) => {
   return response.data;
 };
 
-export const markTicketGiven = async (ticketId: string, ticketNumber: string) => {
+export const markTicketGiven = async (
+  ticketId: string,
+  ticketNumber: string
+) => {
   const response = await api.post(`/admin/mark-ticket-given/${ticketId}`, {
-    ticketNumber
+    ticketNumber,
   });
   return response.data;
 };
 
 export const getEmailTemplates = async () => {
-  const response = await api.get('/admin/email-templates');
+  const response = await api.get("/admin/email-templates");
   return response.data.templates;
 };
 
 export const sendBulkEmails = async (templateId: string) => {
-  const response = await api.post('/admin/send-bulk-emails', {
+  const response = await api.post("/admin/send-bulk-emails", {
     templateId,
   });
   return response.data;
@@ -57,12 +83,12 @@ export const sendBulkEmails = async (templateId: string) => {
 
 export const uploadPaymentProof = async (ticketId: string, file: File) => {
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('id', ticketId);
+  formData.append("file", file);
+  formData.append("id", ticketId);
 
-  const response = await api.post('/admin/tickets/finalize', formData, {
+  const response = await api.post("/admin/tickets/finalize", formData, {
     headers: {
-      'Content-Type': 'multipart/form-data',
+      "Content-Type": "multipart/form-data",
     },
   });
   return response.data;
@@ -71,4 +97,46 @@ export const uploadPaymentProof = async (ticketId: string, file: File) => {
 export const markEntry = async (ticketId: string) => {
   const response = await api.post(`/admin/toggle-entry-marked/${ticketId}`);
   return response.data;
+};
+
+export const whoami = async () => {
+  try {
+    const response = await api.get(`/admin/whoami`);
+    return response.data || null;
+  } catch {
+    return null;
+  }
+};
+
+export const getCurrentTicketPricing = async (): Promise<TicketPricing> => {
+  const response = await api.get('/admin/offers/active');
+  return response.data;
+};
+
+export const updateTicketPricing = async (pricing: TicketPricing): Promise<TicketPricing> => {
+  const response = await api.put('/admin/ticket-pricing', pricing);
+  return response.data;
+};
+
+export const getAnalytics = async (): Promise<any> => {
+  const response = await api.get('/admin/ticket-analytics');
+  return response.data;
+};
+
+export const getOffers = async (): Promise<Offer[]> => {
+  const response = await api.get('/admin/offers/list');
+  return response.data;
+};
+
+export const addOffer = async (offer: { offer: string; price: string }): Promise<Offer> => {
+  const response = await api.post('/admin/offers', offer);
+  return response.data;
+};
+
+export const setActiveOffer = async (offerId: string, currentOfferId: string): Promise<void> => {
+  await api.patch('/admin/offers/active', { offerId, currentOfferId });
+};
+
+export const deleteOffer = async (offerId: string): Promise<void> => {
+  await api.delete(`/offers/${offerId}`);
 };

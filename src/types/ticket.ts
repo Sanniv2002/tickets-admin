@@ -31,3 +31,26 @@ export interface EmailTemplate {
   subject: string;
   body: string;
 }
+
+export interface Analytics {
+  totalTickets: number;
+  completedTicketsStage2: number;
+  verifiedPayments: number;
+  entriesMarked: number;
+  timestamp: string;
+}
+
+
+export interface TicketPricing {
+  id: string,
+  offer: string,
+  active: boolean,
+  price: string
+}
+
+export interface Offer {
+  _id: string;
+  offer: string;
+  active: boolean;
+  price: string;
+}

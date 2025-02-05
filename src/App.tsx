@@ -1,9 +1,11 @@
-import React from 'react';
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 import TicketList from './pages/TicketList';
 import ProtectedRoute from './components/ProtectedRoute';
+import DashboardLayout from './components/DashboardLayout';
 
 function App() {
   return (
@@ -12,14 +14,26 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
-          path="/tickets"
+          path="/dashboard"
           element={
             <ProtectedRoute>
-              <TicketList />
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/tickets" replace />} />
+        <Route
+          path="/tickets"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <TicketList />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

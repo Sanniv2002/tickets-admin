@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, getEmailTemplates, sendBulkEmails } from '../services/api';
+import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, getEmailTemplates, sendBulkEmails, logout } from '../services/api';
 import { Ticket, PaginatedResponse, EmailTemplate } from '../types/ticket';
 import {
   X, TicketIcon, CreditCard, LogOut,
@@ -200,8 +200,8 @@ const TicketList = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    await logout()
     window.location.href = '/login';
   };
 

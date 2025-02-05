@@ -12,12 +12,19 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login(email, password);
-      navigate('/tickets?page=1');
+      const response = await login(email, password);
+
+      if (response) {
+        toast.success("Login successful!");
+        navigate('/dashboard');
+      } else {
+        toast.error("Invalid credentials");
+      }
     } catch (error) {
-      toast.error('Invalid credentials');
+      toast.error("Invalid credentials");
     }
   };
+
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
@@ -33,7 +40,7 @@ const Login = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500"
+              className="py-1 mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500"
               required
             />
           </div>
@@ -43,7 +50,7 @@ const Login = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500"
+              className="py-1 mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500"
               required
             />
           </div>

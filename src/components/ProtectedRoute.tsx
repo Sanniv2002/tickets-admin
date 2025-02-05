@@ -1,14 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { whoami } from '../services/api';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const token = localStorage.getItem('token');
-  
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  return <>{children}</>;
+  useEffect(() => {
+    const checkAuth = async () => {
+      const user = await whoami();
+      setIsAuthenticated(!!user);
+    };
+
+    checkAuth();
+  }, []);
+
+  if (isAuthenticated === null) return <div>Loading...</div>;
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 export default ProtectedRoute;
