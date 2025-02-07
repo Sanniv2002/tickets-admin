@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus, Crown } from 'lucide-react';
 import { whoami } from '../services/api';
 
 const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -51,7 +51,9 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   );
 
   return (
-    <div className="min-h-screen bg-black scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
+    <div className={`min-h-screen bg-black scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 ${
+      user?.isSuperAdmin ? 'border-t-2 border-red-600/50' : ''
+    }`}>
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
@@ -59,9 +61,13 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         />
       )}
 
-      <div className="lg:hidden fixed top-0 right-0 left-0 z-20 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/80">
+      <div className={`lg:hidden fixed top-0 right-0 left-0 z-20 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/80 ${
+        user?.isSuperAdmin ? 'border-b border-red-600/30' : ''
+      }`}>
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-red-600">TedX Admin</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-red-600">TedX Admin</h1>
+          </div>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-zinc-800/50"
@@ -80,12 +86,15 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           ${isSidebarOpen ? 'w-64' : 'w-20'}
           lg:translate-x-0
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${user?.isSuperAdmin ? 'border-r-2 border-red-600/30' : ''}
         `}
       >
         <div className="hidden lg:flex h-16 items-center justify-between px-4">
-          <h1 className={`text-xl font-bold text-red-600 transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>
-            TedX Admin
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className={`text-xl font-bold text-red-600 transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>
+              TedX Admin
+            </h1>
+          </div>
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-zinc-800/50"
@@ -110,6 +119,14 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
 
         <div className="absolute bottom-4 left-0 right-0 px-3">
+          {user?.isSuperAdmin && isSidebarOpen && (
+            <div className="mb-2 px-4 py-2 bg-red-600/10 rounded-lg border border-red-600/20">
+              <div className="flex items-center gap-2 text-red-500">
+                <Crown className="w-4 h-4" />
+                <span className="text-sm">Super Admin Mode</span>
+              </div>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className={`w-full flex items-center gap-4 px-4 py-3 text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-300`}
@@ -127,6 +144,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}
           pt-[4rem] lg:pt-0
+          ${user?.isSuperAdmin ? 'bg-gradient-to-b from-red-950/5 to-transparent' : ''}
         `}
       >
         <div className="container mx-auto p-4 lg:p-8">

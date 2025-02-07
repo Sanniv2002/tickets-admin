@@ -305,9 +305,6 @@ const Dashboard = () => {
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
                                 <>
-                                  {!user?.isSuperAdmin && (
-                                    <Lock className="w-4 h-4" />
-                                  )}
                                   <Trash2 className="w-4 h-4" />
                                 </>
                               )}

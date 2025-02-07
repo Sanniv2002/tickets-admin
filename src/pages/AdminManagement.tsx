@@ -1,21 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { addAdmin, whoami } from '../services/api';
-import { Loader2, Lock, UserPlus } from 'lucide-react';
+import { addAdmin, whoami, getAdmins } from '../services/api';
+import { Loader2, Lock, UserPlus, Shield, User } from 'lucide-react';
+
+interface Admin {
+  email: string;
+  isSuperAdmin: boolean;
+}
 
 const AdminManagement = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [loadingAdmins, setLoadingAdmins] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const checkUser = async () => {
       const user = await whoami();
       setIsSuperAdmin(user?.isSuperAdmin || false);
+      if (user?.isSuperAdmin) {
+        fetchAdmins();
+      }
     };
     checkUser();
   }, []);
+
+  const fetchAdmins = async () => {
+    try {
+      setLoadingAdmins(true);
+      const adminList = await getAdmins();
+      setAdmins(adminList.admins);
+    } catch (error) {
+      toast.error('Failed to fetch admins');
+    } finally {
+      setLoadingAdmins(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +52,7 @@ const AdminManagement = () => {
       toast.success('Admin added successfully');
       setEmail('');
       setPassword('');
+      fetchAdmins(); // Refresh the list after adding new admin
     } catch (error) {
       toast.error('Failed to add admin');
     } finally {
@@ -51,50 +74,91 @@ const AdminManagement = () => {
     <div className="p-8">
       <h1 className="text-3xl font-bold text-white mb-8">Admin Management</h1>
       
-      <div className="max-w-md">
-        <div className="bg-zinc-900 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-6">Add New Admin</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
-                required
-              />
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <div className="bg-zinc-900 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-white mb-6">Add New Admin</h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
-                required
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
+                  required
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <UserPlus className="w-4 h-4 mr-2" />
-              )}
-              Add Admin
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <UserPlus className="w-4 h-4 mr-2" />
+                )}
+                Add Admin
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div className="bg-zinc-900 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-white mb-6">Admin List</h2>
+            
+            {loadingAdmins ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800 pr-2">
+                {admins.map((admin, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg flex items-center justify-between ${
+                      admin.isSuperAdmin ? 'bg-red-600/10 border border-red-600/20' : 'bg-zinc-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {admin.isSuperAdmin ? (
+                        <Shield className="w-5 h-5 text-red-500" />
+                      ) : (
+                        <User className="w-5 h-5 text-gray-400" />
+                      )}
+                      <span className={`${admin.isSuperAdmin ? 'text-red-500 font-medium' : 'text-gray-300'}`}>
+                        {admin.email}
+                      </span>
+                    </div>
+                    {admin.isSuperAdmin && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-red-600/20 text-red-400">
+                        Super Admin
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

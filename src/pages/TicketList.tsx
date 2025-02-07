@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, getEmailTemplates, logout, whoami } from '../services/api';
+import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, whoami } from '../services/api';
 import { Ticket, PaginatedResponse, User } from '../types/ticket';
 import {
   X, TicketIcon, CreditCard,

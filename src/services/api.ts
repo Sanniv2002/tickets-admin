@@ -152,9 +152,14 @@ export const setActiveOffer = async (offerId: string, currentOfferId: string): P
 };
 
 export const deleteOffer = async (offerId: string): Promise<void> => {
-  await api.delete(`/offers/${offerId}`);
+  await api.delete(`/admin/offers/${offerId}`);
 };
 
 export const addAdmin = async (email: string, password: string): Promise<void> => {
   await api.post('/admin/add', { email, password });
+};
+
+export const getAdmins = async () => {
+  const response = await api.get('/admin/list');
+  return response.data;
 };
