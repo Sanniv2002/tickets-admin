@@ -45,6 +45,15 @@ export const getTickets = async (page: number): Promise<PaginatedResponse> => {
   return response.data;
 };
 
+export const getAttendees = async (page: number): Promise<PaginatedResponse> => {
+  const response = await api.get(`/admin/attendees`, {
+    params: {
+      page,
+    },
+  });
+  return response.data;
+};
+
 export const searchTickets = async (query: string): Promise<any> => {
   const response = await api.get(`admin/tickets/fuzzy`, {
     params: {
@@ -139,4 +148,8 @@ export const setActiveOffer = async (offerId: string, currentOfferId: string): P
 
 export const deleteOffer = async (offerId: string): Promise<void> => {
   await api.delete(`/offers/${offerId}`);
+};
+
+export const addAdmin = async (email: string, password: string): Promise<void> => {
+  await api.post('/admin/add', { email, password });
 };

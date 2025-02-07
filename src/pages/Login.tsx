@@ -31,7 +31,7 @@ const Login = () => {
       <div className="bg-zinc-900 p-8 rounded-lg shadow-xl w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <CircleUserRound className="w-16 h-16 text-red-600 mb-4" />
-          <h1 className="text-2xl font-bold text-white">TedX Admin Login</h1>
+          <h1 className="text-2xl font-bold text-white">TedX MGMT</h1>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

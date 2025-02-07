@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus } from 'lucide-react';
+import { whoami } from '../services/api';
 
 const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<{ isSuperAdmin: boolean } | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userData = await whoami();
+      setUser(userData);
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -93,6 +103,10 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <nav className="space-y-2">
             <NavLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavLink to="/tickets" icon={Ticket} label="Tickets" />
+            <NavLink to="/attendees" icon={Users} label="Attendees" />
+            {user?.isSuperAdmin && (
+              <NavLink to="/admin-management" icon={UserPlus} label="Admin Management" />
+            )}
           </nav>
         </div>
 

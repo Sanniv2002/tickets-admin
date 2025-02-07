@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, Users, CreditCard, IndianRupee, Plus, Loader2, X, Trash2, Lock } from 'lucide-react';
-import { getAnalytics, getOffers, addOffer, setActiveOffer, deleteOffer, whoami } from '../services/api';
-import { Analytics, Offer, User } from '../types/ticket';
+import { Ticket, Users, CreditCard, IndianRupee, Plus, Loader2, X, Trash2, Lock, Mail } from 'lucide-react';
+import { getAnalytics, getOffers, addOffer, setActiveOffer, deleteOffer, whoami, getEmailTemplates, sendBulkEmails } from '../services/api';
+import { Analytics, Offer, User, EmailTemplate } from '../types/ticket';
 import toast from 'react-hot-toast';
 
 const SkeletonCard = () => (
@@ -38,6 +38,10 @@ const Dashboard = () => {
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [sendingEmails, setSendingEmails] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -47,7 +51,47 @@ const Dashboard = () => {
     fetchUser();
     fetchAnalytics();
     fetchOffers();
+    fetchEmailTemplates();
   }, []);
+
+  const fetchEmailTemplates = async () => {
+    try {
+      const templates = await getEmailTemplates();
+      setEmailTemplates(templates);
+      if (templates.length > 0) {
+        setSelectedTemplate(templates[0].id);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch email templates');
+    }
+  };
+
+  const handleSendBulkEmails = async () => {
+    if (!user?.isSuperAdmin) {
+      toast.error('Only superadmins can send bulk emails');
+      return;
+    }
+
+    if (!selectedTemplate) {
+      toast.error('Please select an email template');
+      return;
+    }
+
+    try {
+      setSendingEmails(true);
+      await sendBulkEmails(selectedTemplate);
+      toast.success('Bulk emails sent successfully');
+      setShowEmailModal(false);
+    } catch (error) {
+      toast.error('Failed to send bulk emails');
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
+  const getSelectedTemplate = () => {
+    return emailTemplates.find(template => template.id === selectedTemplate);
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -157,10 +201,9 @@ const Dashboard = () => {
       {loading ? (
         <>
           <SkeletonStats />
-          <div className="space-y-6">
-            {[1, 2, 3].map((i) => (
-              <SkeletonCard key={i} />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SkeletonCard />
+            <SkeletonCard />
           </div>
         </>
       ) : (
@@ -262,6 +305,9 @@ const Dashboard = () => {
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
                                 <>
+                                  {!user?.isSuperAdmin && (
+                                    <Lock className="w-4 h-4" />
+                                  )}
                                   <Trash2 className="w-4 h-4" />
                                 </>
                               )}
@@ -290,11 +336,21 @@ const Dashboard = () => {
                   Manage Tickets
                 </button>
                 <button
+                  onClick={() => navigate('/attendees')}
                   className="flex items-center justify-center px-4 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
                 >
                   <Users className="w-5 h-5 mr-2" />
                   View Attendees
                 </button>
+                {user?.isSuperAdmin && (
+                  <button
+                    onClick={() => setShowEmailModal(true)}
+                    className="flex items-center justify-center px-4 py-3 bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Mail className="w-5 h-5 mr-2" />
+                    Send Bulk Emails
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -310,7 +366,7 @@ const Dashboard = () => {
                 onClick={() => setShowOfferModal(false)}
                 className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 bg-white" />
               </button>
             </div>
             <form onSubmit={handleAddOffer} className="space-y-6">
@@ -365,6 +421,76 @@ const Dashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-zinc-900 rounded-lg p-6 max-w-2xl w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-white">Send Bulk Emails</h2>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="p-2 hover:bg-zinc-800 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Select Email Template
+              </label>
+              <select
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-purple-500"
+              >
+                {emailTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedTemplate && getSelectedTemplate() && (
+              <div className="space-y-4 mb-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400 mb-2">Subject</h3>
+                  <div className="p-3 bg-zinc-800 rounded-md text-white">
+                    {getSelectedTemplate()?.subject}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400 mb-2">Email Body</h3>
+                  <div className="p-3 bg-zinc-800 rounded-md text-white whitespace-pre-wrap h-60 overflow-y-scroll scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-900">
+                    {getSelectedTemplate()?.body}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="px-4 py-2 bg-zinc-800 rounded-md hover:bg-zinc-700 text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendBulkEmails}
+                disabled={sendingEmails}
+                className="flex items-center px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
+              >
+                {sendingEmails ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4 mr-2" />
+                )}
+                Send Emails
+              </button>
+            </div>
           </div>
         </div>
       )}
