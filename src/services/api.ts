@@ -54,13 +54,18 @@ export const getAttendees = async (page: number): Promise<PaginatedResponse> => 
   return response.data;
 };
 
-export const searchTickets = async (query: string): Promise<any> => {
+export const searchTickets = async (query: string, filter?: object): Promise<any> => {
   const response = await api.get(`admin/tickets/fuzzy`, {
     params: {
       query,
+      ...filter
     },
   });
   return response.data;
+}
+
+export const searchAttendees = async (query: string): Promise<any> => {
+  return searchTickets(query, { ticket_given: true });
 };
 
 export const verifyPayment = async (ticketId: string) => {

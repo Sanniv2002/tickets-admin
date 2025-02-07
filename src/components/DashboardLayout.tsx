@@ -33,8 +33,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }, []);
   
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+    window.location.href = '/mgmt';
   };
 
   const NavLink = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => (

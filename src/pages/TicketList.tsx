@@ -1,13 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, getEmailTemplates, sendBulkEmails, logout, whoami } from '../services/api';
-import { Ticket, PaginatedResponse, EmailTemplate, User } from '../types/ticket';
+import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, getEmailTemplates, logout, whoami } from '../services/api';
+import { Ticket, PaginatedResponse, User } from '../types/ticket';
 import {
-  X, TicketIcon, CreditCard, LogOut,
+  X, TicketIcon, CreditCard,
   Search, ChevronLeft, ChevronRight,
-  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen, Mail,
-  Lock
+  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen
 } from 'lucide-react';
 
 type FilterType = 'all' | 'given' | 'unverified';
@@ -48,11 +47,7 @@ const TicketList = () => {
   const [ticketNumberInput, setTicketNumberInput] = useState<string>('');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-  const [sendingEmails, setSendingEmails] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [_, setUser] = useState<User | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -61,7 +56,6 @@ const TicketList = () => {
   useEffect(() => {
     fetchUser()
     fetchTickets();
-    fetchEmailTemplates();
   }, [page, activeSearch]);
 
   const fetchUser = async () => {
@@ -69,45 +63,10 @@ const TicketList = () => {
     setUser(userData);
   };
 
-  const fetchEmailTemplates = async () => {
-    try {
-      const templates = await getEmailTemplates();
-      setEmailTemplates(templates);
-      if (templates.length > 0) {
-        setSelectedTemplate(templates[0].id);
-      }
-    } catch (error) {
-      toast.error('Failed to fetch email templates');
-    }
-  };
-
-  const handleSendBulkEmails = async () => {
-    if (!selectedTemplate) {
-      toast.error('Please select an email template');
-      return;
-    }
-
-    try {
-      setSendingEmails(true);
-      await sendBulkEmails(selectedTemplate);
-      toast.success('Bulk emails sent successfully');
-      setShowEmailModal(false);
-    } catch (error) {
-      toast.error('Failed to send bulk emails');
-    } finally {
-      setSendingEmails(false);
-    }
-  };
-
-  const getSelectedTemplate = () => {
-    return emailTemplates.find(template => template.id === selectedTemplate);
-  };
-
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         clearSearch();
-        setShowEmailModal(false);
       }
       if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
         e.preventDefault();
@@ -229,11 +188,6 @@ const TicketList = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout()
-    window.location.href = '/login';
-  };
-
   const filteredTickets = tickets.filter(ticket => {
     switch (activeFilter) {
       case 'given':
@@ -283,23 +237,8 @@ const TicketList = () => {
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-8">Ticket Management</h1>
+          <h1 className="text-3xl font-bold text-white mb-1">Ticket Management</h1>
           <div className="flex gap-4">
-            <button
-              onClick={() => user?.isSuperAdmin ? setShowEmailModal(true) : toast.error('Only superadmins can send bulk emails')}
-              disabled={!user?.isSuperAdmin}
-              className="group relative flex items-center px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
-            >
-              <Mail className="w-4 h-4 mr-2 text-white" />
-              Send Bulk Emails
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-4 py-2 bg-red-600 rounded-md hover:bg-red-700"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </button>
           </div>
         </div>
 
@@ -613,76 +552,6 @@ const TicketList = () => {
             >
               <X className="w-6 h-6" />
             </button>
-          </div>
-        </div>
-      )}
-
-      {showEmailModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-zinc-900 rounded-lg p-6 max-w-2xl w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Send Bulk Emails</h2>
-              <button
-                onClick={() => setShowEmailModal(false)}
-                className="p-2 hover:bg-zinc-800 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Select Email Template
-              </label>
-              <select
-                value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-purple-500"
-              >
-                {emailTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {selectedTemplate && getSelectedTemplate() && (
-              <div className="space-y-4 mb-6">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-400 mb-2">Subject</h3>
-                  <div className="p-3 bg-zinc-800 rounded-md text-white">
-                    {getSelectedTemplate()?.subject}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-400 mb-2">Email Body</h3>
-                  <div className="p-3 bg-zinc-800 rounded-md text-white whitespace-pre-wrap h-60 overflow-y-scroll scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-900">
-                    {getSelectedTemplate()?.body}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setShowEmailModal(false)}
-                className="px-4 py-2 bg-zinc-800 rounded-md hover:bg-zinc-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSendBulkEmails}
-                disabled={sendingEmails}
-                className="flex items-center px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
-              >
-                {sendingEmails ? (
-                  <Loader2 className="w-4 h-4  mr-2 animate-spin" />
-                ) : (
-                  <Mail className="w-4 h-4 mr-2" />
-                )}
-                Send Emails
-              </button>
-            </div>
           </div>
         </div>
       )}

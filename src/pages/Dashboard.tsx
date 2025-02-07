@@ -197,7 +197,7 @@ const Dashboard = () => {
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold text-white mb-8">Dashboard</h1>
-      
+
       {loading ? (
         <>
           <SkeletonStats />
@@ -339,8 +339,8 @@ const Dashboard = () => {
                   onClick={() => navigate('/attendees')}
                   className="flex items-center justify-center px-4 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
                 >
-                  <Users className="w-5 h-5 mr-2" />
-                  View Attendees
+                  <Users className="w-5 h-5 mr-2 text-white" />
+                  <h2 className='text-white'>View Attendees</h2>
                 </button>
                 {user?.isSuperAdmin && (
                   <button
