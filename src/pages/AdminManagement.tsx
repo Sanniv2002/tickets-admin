@@ -6,11 +6,11 @@ import { Loader2, Lock, UserPlus, Shield, User } from 'lucide-react';
 interface Admin {
   email: string;
   isSuperAdmin: boolean;
+  hasOnboarded: boolean;
 }
 
 const AdminManagement = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -48,10 +48,9 @@ const AdminManagement = () => {
 
     try {
       setLoading(true);
-      await addAdmin(email, password);
+      await addAdmin(email);
       toast.success('Admin added successfully');
       setEmail('');
-      setPassword('');
       fetchAdmins(); // Refresh the list after adding new admin
     } catch (error) {
       toast.error('Failed to add admin');
@@ -92,20 +91,6 @@ const AdminManagement = () => {
                   required
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
-                  required
-                />
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
@@ -145,15 +130,27 @@ const AdminManagement = () => {
                       ) : (
                         <User className="w-5 h-5 text-gray-400" />
                       )}
-                      <span className={`${admin.isSuperAdmin ? 'text-red-500 font-medium' : 'text-gray-300'}`}>
-                        {admin.email}
-                      </span>
+                      <div>
+                        <span className={`${admin.isSuperAdmin ? 'text-red-500 font-medium' : 'text-gray-300'}`}>
+                          {admin.email}
+                        </span>
+                        {!admin.hasOnboarded && (
+                          <p className="text-sm text-yellow-500">Pending onboarding</p>
+                        )}
+                      </div>
                     </div>
-                    {admin.isSuperAdmin && (
-                      <span className="px-2 py-1 text-xs rounded-full bg-red-600/20 text-red-400">
-                        Super Admin
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {admin.isSuperAdmin && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-red-600/20 text-red-400">
+                          Super Admin
+                        </span>
+                      )}
+                      {!admin.hasOnboarded && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-yellow-600/20 text-yellow-400">
+                          Not Onboarded
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

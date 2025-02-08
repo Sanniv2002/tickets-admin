@@ -155,11 +155,23 @@ export const deleteOffer = async (offerId: string): Promise<void> => {
   await api.delete(`/admin/offers/${offerId}`);
 };
 
-export const addAdmin = async (email: string, password: string): Promise<void> => {
-  await api.post('/admin/add', { email, password });
+export const addAdmin = async (email: string): Promise<void> => {
+  await api.post('/admin/add', { email });
 };
 
 export const getAdmins = async () => {
   const response = await api.get('/admin/list');
   return response.data;
+};
+
+export const resetPassword = async (password: string) => {
+  try {
+    const response = await api.post("/admin/reset-password", { 
+      password
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Password reset failed:", error);
+    throw error;
+  }
 };

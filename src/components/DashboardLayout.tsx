@@ -123,7 +123,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <div className="mb-2 px-4 py-2 bg-red-600/10 rounded-lg border border-red-600/20">
               <div className="flex items-center gap-2 text-red-500">
                 <Crown className="w-4 h-4" />
-                <span className="text-sm">Super Admin Mode</span>
+                <span className="text-sm">Super Admin</span>
               </div>
             </div>
           )}

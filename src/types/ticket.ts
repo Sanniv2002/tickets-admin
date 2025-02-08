@@ -57,4 +57,5 @@ export interface Offer {
 
 export interface User {
   isSuperAdmin: boolean;
+  hasOnboarded?: boolean;
 }

@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import TicketList from './pages/TicketList';
 import Attendees from './pages/Attendees';
 import AdminManagement from './pages/AdminManagement';
+import Onboarding from './pages/Onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -14,6 +15,7 @@ function App() {
       <Toaster position="top-right" />
       <Routes>
         <Route path="/mgmt" element={<Login />} />
+        <Route path="/onboarding" element={<Onboarding />} />
         <Route
           path="/dashboard"
           element={
@@ -60,4 +62,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { login } from '../services/api';
-import { CircleUserRound } from 'lucide-react';
+import { CircleUserRound, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,7 +17,12 @@ const Login = () => {
 
       if (response) {
         toast.success("Login successful!");
-        navigate('/dashboard');
+        if (!response.user.hasOnboarded) {
+          // Use the admin ID from the response for onboarding
+          navigate(`/onboarding?id=${response.user.id}`);
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         toast.error("Invalid credentials");
       }
@@ -24,7 +30,6 @@ const Login = () => {
       toast.error("Invalid credentials");
     }
   };
-
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
@@ -40,19 +45,28 @@ const Login = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="py-1 mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500"
+              className="py-2 px-3 mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500"
               required
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="py-1 mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="py-2 px-3 mt-1 block w-full rounded-md bg-zinc-800 border-gray-700 text-white shadow-sm focus:border-red-500 focus:ring-red-500 pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"
@@ -66,4 +80,4 @@ const Login = () => {
   );
 };
 
-export default Login
+export default Login;
