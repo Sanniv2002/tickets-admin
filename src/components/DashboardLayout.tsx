@@ -51,9 +51,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   );
 
   return (
-    <div className={`min-h-screen bg-black scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 ${
-      user?.isSuperAdmin ? 'border-t-2 border-red-600/50' : ''
-    }`}>
+    <div className={`min-h-screen bg-black ${user?.isSuperAdmin ? 'border-t-2 border-red-600/50' : ''}`}>
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
@@ -129,7 +127,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           )}
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-4 px-4 py-3 text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-300`}
+            className="w-full flex items-center gap-4 px-4 py-3 text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-300"
           >
             <LogOut className="w-5 h-5 min-w-[20px]" />
             <span className={`transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>
@@ -144,10 +142,11 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}
           pt-[4rem] lg:pt-0
+          min-h-screen
           ${user?.isSuperAdmin ? 'bg-gradient-to-b from-red-950/5 to-transparent' : ''}
         `}
       >
-        <div className="container mx-auto p-4 lg:p-8">
+        <div className="container mx-auto px-4 py-4 lg:p-8 max-w-[1600px]">
           {children}
         </div>
       </main>
