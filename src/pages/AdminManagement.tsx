@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { addAdmin, whoami, getAdmins } from '../services/api';
-import { Loader2, Lock, UserPlus, Shield, User } from 'lucide-react';
+import { addAdmin, whoami, getAdmins, getCacheStatus, toggleCache } from '../services/api';
+import { Loader2, Lock, UserPlus, Shield, User, Database } from 'lucide-react';
 
 interface Admin {
   email: string;
@@ -15,6 +15,9 @@ const AdminManagement = () => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loadingAdmins, setLoadingAdmins] = useState(true);
+  const [cacheEnabled, setCacheEnabled] = useState(false);
+  const [loadingCache, setLoadingCache] = useState(true);
+  const [togglingCache, setTogglingCache] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -22,10 +25,41 @@ const AdminManagement = () => {
       setIsSuperAdmin(user?.isSuperAdmin || false);
       if (user?.isSuperAdmin) {
         fetchAdmins();
+        fetchCacheStatus();
       }
     };
     checkUser();
   }, []);
+
+  const fetchCacheStatus = async () => {
+    try {
+      setLoadingCache(true);
+      const status = await getCacheStatus();
+      setCacheEnabled(status.cacheEnabled);
+    } catch (error) {
+      toast.error('Failed to fetch cache status');
+    } finally {
+      setLoadingCache(false);
+    }
+  };
+
+  const handleToggleCache = async () => {
+    if (!isSuperAdmin) {
+      toast.error('Only superadmins can modify cache settings');
+      return;
+    }
+
+    try {
+      setTogglingCache(true);
+      await toggleCache(!cacheEnabled);
+      setCacheEnabled(!cacheEnabled);
+      toast.success(`Cache ${!cacheEnabled ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      toast.error('Failed to toggle cache');
+    } finally {
+      setTogglingCache(false);
+    }
+  };
 
   const fetchAdmins = async () => {
     try {
@@ -51,7 +85,7 @@ const AdminManagement = () => {
       await addAdmin(email);
       toast.success('Admin added successfully');
       setEmail('');
-      fetchAdmins(); // Refresh the list after adding new admin
+      fetchAdmins();
     } catch (error) {
       toast.error('Failed to add admin');
     } finally {
@@ -104,6 +138,55 @@ const AdminManagement = () => {
                 Add Admin
               </button>
             </form>
+          </div>
+        </div>
+
+        <div>
+          <div className="bg-zinc-900 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-white mb-6">Experimental Features</h2>
+            <div className="space-y-4">
+              {loadingCache ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Database className={`w-5 h-5 ${cacheEnabled ? 'text-green-500' : 'text-gray-400'}`} />
+                      <div>
+                        <p className="text-white font-medium">Cache Status</p>
+                        <p className="text-sm text-gray-400">
+                          {cacheEnabled ? 'Caching is currently enabled' : 'Caching is currently disabled'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleToggleCache}
+                      disabled={togglingCache}
+                      className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${
+                        cacheEnabled 
+                          ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30' 
+                          : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                      }`}
+                    >
+                      {togglingCache ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Database className="w-4 h-4" />
+                          {cacheEnabled ? 'Disable Cache' : 'Enable Cache'}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Toggling caching will affect the application's performance and data retrieval speed.
+                    Enable cache for better performance.
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
 

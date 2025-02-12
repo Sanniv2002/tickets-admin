@@ -23,6 +23,7 @@ export interface PaginatedResponse {
   page: number;
   limit: number;
   tickets: Ticket[];
+  fromCache: boolean;
 }
 
 export interface EmailTemplate {

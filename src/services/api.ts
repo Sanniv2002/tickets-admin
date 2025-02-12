@@ -175,3 +175,12 @@ export const resetPassword = async (password: string) => {
     throw error;
   }
 };
+
+export const getCacheStatus = async (): Promise<{ cacheEnabled: boolean }> => {
+  const response = await api.get('/admin/cache-status');
+  return response.data;
+};
+
+export const toggleCache = async (enabled: boolean): Promise<void> => {
+  await api.post('/admin/toggle-cache', { enabled });
+}

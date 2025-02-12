@@ -188,7 +188,7 @@ const TicketList = () => {
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
+  const filteredTickets = tickets?.filter(ticket => {
     switch (activeFilter) {
       case 'given':
         return ticket.ticket_given;
@@ -322,7 +322,7 @@ const TicketList = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {filteredTickets.map((ticket) => (
+            {filteredTickets?.map((ticket) => (
               <div
                 key={ticket._id}
                 className={`bg-zinc-900 rounded-lg p-6 ${ticket.stage === '2' ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-500'
