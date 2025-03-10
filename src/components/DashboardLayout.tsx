@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus, Crown, StickyNote } from 'lucide-react';
-import { whoami } from '../services/api';
+import { logout, whoami } from '../services/api';
 
 const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -32,7 +32,8 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout()
     window.location.href = '/mgmt';
   };
 

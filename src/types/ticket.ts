@@ -78,10 +78,14 @@ export interface PaginatedBillsResponse {
   limit: number;
 }
 
+export interface NoteTag {
+  name: string;
+  done: boolean;
+}
+
 export interface NoteItem {
   description: string;
-  toggle?: boolean;
-  tags: string[];
+  tags: NoteTag[];
 }
 
 export interface Note {
@@ -92,6 +96,5 @@ export interface Note {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
-  tags: string[];
   isArchived: boolean;
 }

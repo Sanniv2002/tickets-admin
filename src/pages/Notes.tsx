@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { getNotes, createNote, updateNote, deleteNote } from '../services/api';
-import { Note, NoteItem } from '../types/ticket';
+import { Note, NoteItem, NoteTag } from '../types/ticket';
 import {
   Plus, Loader2, Archive, ChevronDown,
   ChevronRight, Trash2, Edit, X, ArchiveRestore,
-  Clock, User, Tag, PlusCircle
+  Clock, User, Tag, PlusCircle, Check, Copy, AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -13,27 +13,42 @@ const Notes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [noteForm, setNoteForm] = useState({
     heading: '',
     items: [] as NoteItem[],
-    tags: [] as string[],
   });
   const [newItem, setNewItem] = useState('');
   const [newTag, setNewTag] = useState('');
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [showTagInput, setShowTagInput] = useState(false);
+  const [availableTags, setAvailableTags] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchNotes();
   }, []);
 
+  useEffect(() => {
+    // Extract all unique tags from notes
+    const tags = new Set<string>();
+    notes.forEach(note => {
+      note.items.forEach(item => {
+        item.tags.forEach(tag => {
+          tags.add(tag.name);
+        });
+      });
+    });
+    setAvailableTags(tags);
+  }, [notes]);
+
   const fetchNotes = async () => {
     try {
       setLoading(true);
-      const fetchedNotes = await getNotes();
-      setNotes(fetchedNotes);
+      const response = await getNotes();
+      setNotes(response);
     } catch (error) {
       toast.error('Failed to fetch notes');
     } finally {
@@ -50,7 +65,7 @@ const Notes = () => {
       });
       toast.success('Note created successfully');
       setShowNoteModal(false);
-      setNoteForm({ heading: '', items: [], tags: [] });
+      setNoteForm({ heading: '', items: [] });
       await fetchNotes();
     } catch (error) {
       toast.error('Failed to create note');
@@ -68,10 +83,11 @@ const Notes = () => {
   };
 
   const handleDeleteNote = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
     try {
       await deleteNote(id);
       toast.success('Note deleted successfully');
+      setShowDeleteModal(false);
+      setNoteToDelete(null);
       await fetchNotes();
     } catch (error) {
       toast.error('Failed to delete note');
@@ -94,7 +110,7 @@ const Notes = () => {
     if (newItem.trim()) {
       setNoteForm(prev => ({
         ...prev,
-        items: [...prev.items, { description: newItem.trim(), toggle: false, tags: [] }]
+        items: [...prev.items, { description: newItem.trim(), tags: [] }]
       }));
       setNewItem('');
     }
@@ -107,13 +123,17 @@ const Notes = () => {
     }));
   };
 
-  const addTagToItem = (itemIndex: number, tag: string) => {
-    if (tag.trim() && !noteForm.items[itemIndex].tags.includes(tag.trim())) {
+  const addTagToItem = (itemIndex: number, tagName: string) => {
+    if (tagName.trim()) {
+      const newTag: any = {
+          name: tagName.trim(),
+      };
+
       setNoteForm(prev => ({
         ...prev,
         items: prev.items.map((item, i) => 
           i === itemIndex 
-            ? { ...item, tags: [...item.tags, tag.trim()] }
+            ? { ...item, tags: [...item.tags, newTag] }
             : item
         )
       }));
@@ -122,15 +142,35 @@ const Notes = () => {
     }
   };
 
-  const removeTagFromItem = (itemIndex: number, tagToRemove: string) => {
+  const removeTagFromItem = (itemIndex: number, tagName: string) => {
     setNoteForm(prev => ({
       ...prev,
       items: prev.items.map((item, i) => 
         i === itemIndex 
-          ? { ...item, tags: item.tags.filter(tag => tag !== tagToRemove) }
+          ? { ...item, tags: item.tags.filter(tag => tag.name !== tagName) }
           : item
       )
     }));
+  };
+
+  const toggleTagStatus = async (noteId: string, itemIndex: number, tagIndex: number) => {
+    const note = notes.find(n => n._id === noteId);
+    if (!note) return;
+
+    const updatedItems = [...note.items];
+    const tag = updatedItems[itemIndex].tags[tagIndex];
+    
+    updatedItems[itemIndex].tags[tagIndex] = {
+      ...tag,
+    };
+
+    await handleUpdateNote(noteId, { items: updatedItems });
+  };
+
+  const copyTagsToClipboard = (tags: NoteTag[]) => {
+    const tagNames = tags.map(tag => tag.name);
+    navigator.clipboard.writeText(tagNames.join(', '));
+    toast.success('Tags copied to clipboard');
   };
 
   const renderNote = (note: Note) => {
@@ -166,33 +206,41 @@ const Notes = () => {
 
               {isExpanded && note.items.length > 0 && (
                 <div className="mt-4 space-y-4">
-                  {note.items.map((item, index) => (
-                    <div key={index} className="bg-zinc-800 rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={item.toggle}
-                          onChange={() => {
-                            const updatedItems = [...note.items];
-                            updatedItems[index].toggle = !item.toggle;
-                            handleUpdateNote(note._id!, { items: updatedItems });
-                          }}
-                          className="rounded border-gray-600 text-red-600 focus:ring-red-500"
-                        />
-                        <span className={`text-gray-300 ${item.toggle ? 'line-through' : ''}`}>
+                  {note.items.map((item, itemIndex) => (
+                    <div key={itemIndex} className="bg-zinc-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-300">
                           {item.description}
                         </span>
+                        {item.tags.length > 0 && (
+                          <button
+                            onClick={() => copyTagsToClipboard(item.tags)}
+                            className="p-1 hover:bg-zinc-700 rounded-lg text-gray-400 hover:text-white"
+                            title="Copy tags"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                       {item.tags && item.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2 ml-6">
+                        <div className="flex flex-wrap gap-2 mt-2">
                           {item.tags.map((tag, tagIndex) => (
-                            <span
+                            <button
                               key={tagIndex}
-                              className="px-2 py-1 text-xs bg-zinc-700 text-gray-300 rounded-full flex items-center gap-1"
+                              onClick={() => toggleTagStatus(note._id!, itemIndex, tagIndex)}
+                              className={`px-2 py-1 text-xs ${
+                                tag.done 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-red-500/20 text-red-400'
+                              } rounded-full flex items-center gap-1 hover:bg-opacity-80 transition-colors`}
                             >
-                              <Tag className="w-3 h-3" />
-                              {tag}
-                            </span>
+                              {tag.done ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <Tag className="w-3 h-3" />
+                              )}
+                              {tag.name}
+                            </button>
                           ))}
                         </div>
                       )}
@@ -221,7 +269,6 @@ const Notes = () => {
                   setNoteForm({
                     heading: note.heading,
                     items: note.items,
-                    tags: note.tags,
                   });
                   setShowNoteModal(true);
                 }}
@@ -230,7 +277,10 @@ const Notes = () => {
                 <Edit className="w-4 h-4" />
               </button>
               <button
-                onClick={() => handleDeleteNote(note._id!)}
+                onClick={() => {
+                  setNoteToDelete(note._id!);
+                  setShowDeleteModal(true);
+                }}
                 className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg"
               >
                 <Trash2 className="w-4 h-4" />
@@ -249,7 +299,7 @@ const Notes = () => {
         <button
           onClick={() => {
             setSelectedNote(null);
-            setNoteForm({ heading: '', items: [], tags: [] });
+            setNoteForm({ heading: '', items: [] });
             setShowNoteModal(true);
           }}
           className="flex items-center px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
@@ -319,18 +369,26 @@ const Notes = () => {
                         </button>
                       </div>
 
-                      <div className="mt-3 ml-6">
+                      <div className="mt-3">
                         <div className="flex flex-wrap gap-2 mb-2">
                           {item.tags.map((tag, tagIndex) => (
                             <span
                               key={tagIndex}
-                              className="px-2 py-1 text-xs bg-zinc-700 text-gray-300 rounded-full flex items-center gap-1"
+                              className={`px-2 py-1 text-xs ${
+                                tag.done 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-red-500/20 text-red-400'
+                              } rounded-full flex items-center gap-1`}
                             >
-                              <Tag className="w-3 h-3" />
-                              {tag}
+                              {tag.done ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <Tag className="w-3 h-3" />
+                              )}
+                              {tag.name}
                               <button
                                 type="button"
-                                onClick={() => removeTagFromItem(index, tag)}
+                                onClick={() => removeTagFromItem(index, tag.name)}
                                 className="ml-1 hover:text-red-400"
                               >
                                 <X className="w-3 h-3" />
@@ -349,7 +407,13 @@ const Notes = () => {
                               placeholder="Add tag"
                               className="flex-1 px-3 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded-md text-white focus:outline-none focus:border-red-500"
                               autoFocus
+                              list="available-tags"
                             />
+                            <datalist id="available-tags">
+                              {Array.from(availableTags).map((tag) => (
+                                <option key={tag} value={tag} />
+                              ))}
+                            </datalist>
                             <button
                               type="button"
                               onClick={() => addTagToItem(index, newTag)}
@@ -421,6 +485,37 @@ const Notes = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-zinc-900 rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center gap-4 mb-6 text-red-500">
+              <AlertTriangle className="w-12 h-12" />
+              <div>
+                <h3 className="text-lg font-semibold text-white">Delete Note</h3>
+                <p className="text-gray-400">Are you sure you want to delete this note? This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setNoteToDelete(null);
+                }}
+                className="px-4 py-2 bg-zinc-800 rounded-md hover:bg-zinc-700 text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => noteToDelete && handleDeleteNote(noteToDelete)}
+                className="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 text-white"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
