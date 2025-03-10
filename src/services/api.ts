@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Offer, PaginatedResponse, TicketPricing } from "../types/ticket";
+import { Bill, Offer, PaginatedBillsResponse, PaginatedResponse, TicketPricing } from "../types/ticket";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -184,3 +184,19 @@ export const getCacheStatus = async (): Promise<{ cacheEnabled: boolean }> => {
 export const toggleCache = async (enabled: boolean): Promise<void> => {
   await api.post('/admin/toggle-cache', { enabled });
 }
+
+export const getBills = async (page: number): Promise<PaginatedBillsResponse> => {
+  const response = await api.get(`/admin/bills`, {
+    params: { page },
+  });
+  return response.data;
+};
+
+export const uploadBill = async (formData: FormData): Promise<Bill> => {
+  const response = await api.post('/admin/bills', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};

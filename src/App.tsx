@@ -6,12 +6,15 @@ import TicketList from './pages/TicketList';
 import Attendees from './pages/Attendees';
 import AdminManagement from './pages/AdminManagement';
 import Onboarding from './pages/Onboarding';
+import Bills from './pages/Bills';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Toaster position="top-right" />
       <Routes>
         <Route path="/mgmt" element={<Login />} />
@@ -42,6 +45,16 @@ function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Attendees />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bills"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Bills />
               </DashboardLayout>
             </ProtectedRoute>
           }

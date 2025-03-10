@@ -60,3 +60,20 @@ export interface User {
   isSuperAdmin: boolean;
   hasOnboarded?: boolean;
 }
+
+export interface Bill {
+  _id: string;
+  title: string;
+  amount: number;
+  description: string;
+  billUrl: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export interface PaginatedBillsResponse {
+  bills: Bill[];
+  total: number;
+  page: number;
+  limit: number;
+}

@@ -160,7 +160,7 @@ const Attendees = () => {
       ) : (
         <>
           <div className="space-y-4">
-            {attendees.map((attendee) => (
+            {attendees?.map((attendee) => (
               <div
                 key={attendee._id}
                 className="bg-zinc-900 rounded-lg p-4 border-l-4 border-green-500"
