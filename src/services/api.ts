@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Bill, Offer, PaginatedBillsResponse, PaginatedResponse, TicketPricing } from "../types/ticket";
+import { Bill, Note, Offer, PaginatedBillsResponse, PaginatedResponse, TicketPricing } from "../types/ticket";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -199,4 +199,23 @@ export const uploadBill = async (formData: FormData): Promise<Bill> => {
     },
   });
   return response.data;
+};
+
+export const getNotes = async (): Promise<Note[]> => {
+  const response = await api.get('/admin/notes');
+  return response.data.notes;
+};
+
+export const createNote = async (note: Partial<Note>): Promise<Note> => {
+  const response = await api.post('/admin/notes', note);
+  return response.data;
+};
+
+export const updateNote = async (id: string, note: Partial<Note>): Promise<Note> => {
+  const response = await api.put(`/admin/notes/${id}`, note);
+  return response.data;
+};
+
+export const deleteNote = async (id: string): Promise<void> => {
+  await api.delete(`/admin/notes/${id}`);
 };

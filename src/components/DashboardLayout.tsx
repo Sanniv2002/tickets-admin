@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus, Crown, Receipt } from 'lucide-react';
+import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus, Crown, StickyNote } from 'lucide-react';
 import { whoami } from '../services/api';
 
 const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -110,6 +110,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <NavLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavLink to="/tickets" icon={Ticket} label="Tickets" />
             <NavLink to="/attendees" icon={Users} label="Attendees" />
+            <NavLink to="/notes" icon={StickyNote} label="Notes" />
             {/* <NavLink to="/bills" icon={Receipt} label="Bills" /> */}
             {user?.isSuperAdmin && (
               <NavLink to="/admin-management" icon={UserPlus} label="Admin Management" />

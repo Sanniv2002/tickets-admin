@@ -77,3 +77,16 @@ export interface PaginatedBillsResponse {
   page: number;
   limit: number;
 }
+
+export interface Note {
+  _id: string;
+  title: string;
+  description: string;
+  isPinned: boolean;
+  isArchived: boolean;
+  isImportant: boolean;
+  createdAt: string;
+  updatedAt: string;
+  parentId?: string;
+  children?: Note[];
+}

@@ -7,6 +7,7 @@ import Attendees from './pages/Attendees';
 import AdminManagement from './pages/AdminManagement';
 import Onboarding from './pages/Onboarding';
 import Bills from './pages/Bills';
+import Notes from './pages/Notes';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import ScrollToTop from './components/ScrollToTop';
@@ -55,6 +56,16 @@ function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Bills />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notes"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Notes />
               </DashboardLayout>
             </ProtectedRoute>
           }
