@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { getNotes, createNote, updateNote, deleteNote } from '../services/api';
-import { Note } from '../types/ticket';
+import { Note, NoteItem } from '../types/ticket';
 import {
-  Plus, Loader2, Pin, Archive, Star, ChevronDown,
-  ChevronRight, Trash2, Edit, X, PinOff, ArchiveRestore,
-  StarOff, Search, XCircle
+  Plus, Loader2, Archive, ChevronDown,
+  ChevronRight, Trash2, Edit, X, ArchiveRestore,
+  Clock, User, Tag, PlusCircle
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 const Notes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -14,12 +15,15 @@ const Notes = () => {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
   const [noteForm, setNoteForm] = useState({
-    title: '',
-    description: '',
-    parentId: '',
+    heading: '',
+    items: [] as NoteItem[],
+    tags: [] as string[],
   });
+  const [newItem, setNewItem] = useState('');
+  const [newTag, setNewTag] = useState('');
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
+  const [showTagInput, setShowTagInput] = useState(false);
 
   useEffect(() => {
     fetchNotes();
@@ -41,13 +45,12 @@ const Notes = () => {
     e.preventDefault();
     try {
       const newNote = await createNote({
-        title: noteForm.title,
-        description: noteForm.description,
-        parentId: noteForm.parentId || undefined,
+        heading: noteForm.heading,
+        items: noteForm.items,
       });
       toast.success('Note created successfully');
       setShowNoteModal(false);
-      setNoteForm({ title: '', description: '', parentId: '' });
+      setNoteForm({ heading: '', items: [], tags: [] });
       await fetchNotes();
     } catch (error) {
       toast.error('Failed to create note');
@@ -87,34 +90,61 @@ const Notes = () => {
     });
   };
 
-  const filterNotes = (notes: Note[], searchTerm: string): Note[] => {
-    return notes.filter(note => {
-      const matchesSearch = 
-        note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const addItem = () => {
+    if (newItem.trim()) {
+      setNoteForm(prev => ({
+        ...prev,
+        items: [...prev.items, { description: newItem.trim(), toggle: false, tags: [] }]
+      }));
+      setNewItem('');
+    }
+  };
 
-      const childrenMatch = note.children ? 
-        filterNotes(note.children, searchTerm).length > 0 : false;
-
-      return matchesSearch || childrenMatch;
-    }).map(note => ({
-      ...note,
-      children: note.children ? filterNotes(note.children, searchTerm) : undefined
+  const removeItem = (index: number) => {
+    setNoteForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
     }));
   };
 
-  const renderNote = (note: Note, level = 0) => {
-    const isExpanded = expandedNotes.has(note._id);
+  const addTagToItem = (itemIndex: number, tag: string) => {
+    if (tag.trim() && !noteForm.items[itemIndex].tags.includes(tag.trim())) {
+      setNoteForm(prev => ({
+        ...prev,
+        items: prev.items.map((item, i) => 
+          i === itemIndex 
+            ? { ...item, tags: [...item.tags, tag.trim()] }
+            : item
+        )
+      }));
+      setNewTag('');
+      setShowTagInput(false);
+    }
+  };
+
+  const removeTagFromItem = (itemIndex: number, tagToRemove: string) => {
+    setNoteForm(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) => 
+        i === itemIndex 
+          ? { ...item, tags: item.tags.filter(tag => tag !== tagToRemove) }
+          : item
+      )
+    }));
+  };
+
+  const renderNote = (note: Note) => {
+    const isExpanded = expandedNotes.has(note._id!);
 
     return (
-      <div key={note._id} className="mb-4" style={{ marginLeft: `${level * 24}px` }}>
+      <div key={note._id} className="mb-4">
         <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                {note.children && note.children.length > 0 && (
+                {note.items.length > 0 && (
                   <button
-                    onClick={() => toggleExpand(note._id)}
+                    onClick={() => toggleExpand(note._id!)}
                     className="p-1 hover:bg-zinc-800 rounded"
                   >
                     {isExpanded ? (
@@ -124,21 +154,57 @@ const Notes = () => {
                     )}
                   </button>
                 )}
-                <h3 className="text-lg font-semibold text-white">{note.title}</h3>
+                <h3 className="text-lg font-semibold text-white">{note.heading}</h3>
               </div>
-              <p className="text-gray-400 mt-2 whitespace-pre-wrap">{note.description}</p>
+              
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
+                <User className="w-4 h-4" />
+                <span>{note.author}</span>
+                <Clock className="w-4 h-4 ml-2" />
+                <span>{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</span>
+              </div>
+
+              {isExpanded && note.items.length > 0 && (
+                <div className="mt-4 space-y-4">
+                  {note.items.map((item, index) => (
+                    <div key={index} className="bg-zinc-800 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={item.toggle}
+                          onChange={() => {
+                            const updatedItems = [...note.items];
+                            updatedItems[index].toggle = !item.toggle;
+                            handleUpdateNote(note._id!, { items: updatedItems });
+                          }}
+                          className="rounded border-gray-600 text-red-600 focus:ring-red-500"
+                        />
+                        <span className={`text-gray-300 ${item.toggle ? 'line-through' : ''}`}>
+                          {item.description}
+                        </span>
+                      </div>
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2 ml-6">
+                          {item.tags.map((tag, tagIndex) => (
+                            <span
+                              key={tagIndex}
+                              className="px-2 py-1 text-xs bg-zinc-700 text-gray-300 rounded-full flex items-center gap-1"
+                            >
+                              <Tag className="w-3 h-3" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+            
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handleUpdateNote(note._id, { isPinned: !note.isPinned })}
-                className={`p-2 rounded-lg transition-colors ${
-                  note.isPinned ? 'bg-yellow-500/20 text-yellow-400' : 'hover:bg-zinc-800'
-                }`}
-              >
-                {note.isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={() => handleUpdateNote(note._id, { isArchived: !note.isArchived })}
+                onClick={() => handleUpdateNote(note._id!, { isArchived: !note.isArchived })}
                 className={`p-2 rounded-lg transition-colors ${
                   note.isArchived ? 'bg-purple-500/20 text-purple-400' : 'hover:bg-zinc-800'
                 }`}
@@ -150,24 +216,12 @@ const Notes = () => {
                 )}
               </button>
               <button
-                onClick={() => handleUpdateNote(note._id, { isImportant: !note.isImportant })}
-                className={`p-2 rounded-lg transition-colors ${
-                  note.isImportant ? 'bg-red-500/20 text-red-400' : 'hover:bg-zinc-800'
-                }`}
-              >
-                {note.isImportant ? (
-                  <StarOff className="w-4 h-4" />
-                ) : (
-                  <Star className="w-4 h-4" />
-                )}
-              </button>
-              <button
                 onClick={() => {
                   setSelectedNote(note);
                   setNoteForm({
-                    title: note.title,
-                    description: note.description,
-                    parentId: note.parentId || '',
+                    heading: note.heading,
+                    items: note.items,
+                    tags: note.tags,
                   });
                   setShowNoteModal(true);
                 }}
@@ -176,42 +230,17 @@ const Notes = () => {
                 <Edit className="w-4 h-4" />
               </button>
               <button
-                onClick={() => handleDeleteNote(note._id)}
+                onClick={() => handleDeleteNote(note._id!)}
                 className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {note.isPinned && (
-              <span className="px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded">
-                Pinned
-              </span>
-            )}
-            {note.isArchived && (
-              <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded">
-                Archived
-              </span>
-            )}
-            {note.isImportant && (
-              <span className="px-2 py-1 text-xs bg-red-500/20 text-red-400 rounded">
-                Important
-              </span>
-            )}
-          </div>
         </div>
-        {isExpanded && note.children && note.children.length > 0 && (
-          <div className="mt-4">
-            {note.children.map(childNote => renderNote(childNote, level + 1))}
-          </div>
-        )}
       </div>
     );
   };
-
-  const filteredNotes = searchTerm ? filterNotes(notes, searchTerm) : notes;
-  const rootNotes = filteredNotes.filter(note => !note.parentId);
 
   return (
     <div className="p-8">
@@ -220,7 +249,7 @@ const Notes = () => {
         <button
           onClick={() => {
             setSelectedNote(null);
-            setNoteForm({ title: '', description: '', parentId: '' });
+            setNoteForm({ heading: '', items: [], tags: [] });
             setShowNoteModal(true);
           }}
           className="flex items-center px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
@@ -230,38 +259,17 @@ const Notes = () => {
         </button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search notes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 pl-10 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-500"
-          />
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-2.5 text-gray-400 hover:text-white"
-            >
-              <XCircle className="h-5 w-5" />
-            </button>
-          )}
-        </div>
-      </div>
-
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-red-600" />
         </div>
-      ) : rootNotes.length === 0 ? (
+      ) : notes.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-400">No notes found</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {rootNotes.map(note => renderNote(note))}
+          {notes.map(note => renderNote(note))}
         </div>
       )}
 
@@ -276,18 +284,18 @@ const Notes = () => {
                 onClick={() => setShowNoteModal(false)}
                 className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-white" />
               </button>
             </div>
             <form onSubmit={handleCreateNote} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Title
+                  Heading
                 </label>
                 <input
                   type="text"
-                  value={noteForm.title}
-                  onChange={(e) => setNoteForm(prev => ({ ...prev, title: e.target.value }))}
+                  value={noteForm.heading}
+                  onChange={(e) => setNoteForm(prev => ({ ...prev, heading: e.target.value }))}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
                   required
                 />
@@ -295,32 +303,106 @@ const Notes = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Description
+                  Items
                 </label>
-                <textarea
-                  value={noteForm.description}
-                  onChange={(e) => setNoteForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500 min-h-[200px]"
-                  required
-                />
-              </div>
+                <div className="space-y-4">
+                  {noteForm.items.map((item, index) => (
+                    <div key={index} className="bg-zinc-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="flex-1 text-gray-300">{item.description}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          className="p-1 hover:bg-red-500/20 text-red-400 rounded"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Parent Note (Optional)
-                </label>
-                <select
-                  value={noteForm.parentId}
-                  onChange={(e) => setNoteForm(prev => ({ ...prev, parentId: e.target.value }))}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
-                >
-                  <option value="">No parent</option>
-                  {notes.map(note => (
-                    <option key={note._id} value={note._id}>
-                      {note.title}
-                    </option>
+                      <div className="mt-3 ml-6">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {item.tags.map((tag, tagIndex) => (
+                            <span
+                              key={tagIndex}
+                              className="px-2 py-1 text-xs bg-zinc-700 text-gray-300 rounded-full flex items-center gap-1"
+                            >
+                              <Tag className="w-3 h-3" />
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => removeTagFromItem(index, tag)}
+                                className="ml-1 hover:text-red-400"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+
+                        {selectedItemIndex === index && showTagInput ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newTag}
+                              onChange={(e) => setNewTag(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTagToItem(index, newTag))}
+                              placeholder="Add tag"
+                              className="flex-1 px-3 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded-md text-white focus:outline-none focus:border-red-500"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => addTagToItem(index, newTag)}
+                              className="px-3 py-1 bg-zinc-700 rounded-md hover:bg-zinc-600 text-sm"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedItemIndex(null);
+                                setShowTagInput(false);
+                                setNewTag('');
+                              }}
+                              className="p-1 hover:bg-red-500/20 text-red-400 rounded"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedItemIndex(index);
+                              setShowTagInput(true);
+                            }}
+                            className="flex items-center gap-1 text-sm text-gray-400 hover:text-white"
+                          >
+                            <PlusCircle className="w-4 h-4" />
+                            Add tag
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   ))}
-                </select>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newItem}
+                      onChange={(e) => setNewItem(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())}
+                      placeholder="Add new item"
+                      className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={addItem}
+                      className="px-4 py-2 bg-zinc-800 rounded-md hover:bg-zinc-700 text-white"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-4">
