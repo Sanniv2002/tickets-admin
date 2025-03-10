@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { getNotes, createNote, updateNote, deleteNote } from '../services/api';
-import { Note, NoteItem, NoteTag } from '../types/ticket';
+import { Note, NoteItem } from '../types/ticket';
 import {
   Plus, Loader2, Archive, ChevronDown,
   ChevronRight, Trash2, Edit, X, ArchiveRestore,
-  Clock, User, Tag, PlusCircle, Check, Copy, AlertTriangle
+  Clock, User, Tag, PlusCircle, AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -32,7 +32,6 @@ const Notes = () => {
   }, []);
 
   useEffect(() => {
-    // Extract all unique tags from notes
     const tags = new Set<string>();
     notes.forEach(note => {
       note.items.forEach(item => {
@@ -59,7 +58,7 @@ const Notes = () => {
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const newNote = await createNote({
+      await createNote({
         heading: noteForm.heading,
         items: noteForm.items,
       });
@@ -91,6 +90,26 @@ const Notes = () => {
       await fetchNotes();
     } catch (error) {
       toast.error('Failed to delete note');
+    }
+  };
+
+  const handleSubmitNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (selectedNote) {
+        await handleUpdateNote(selectedNote._id!, {
+          heading: noteForm.heading,
+          items: noteForm.items,
+        });
+      } else {
+        await handleCreateNote(e);
+      }
+      toast.success(selectedNote ? 'Note updated successfully' : 'Note created successfully');
+      setShowNoteModal(false);
+      setNoteForm({ heading: '', items: [] });
+      await fetchNotes();
+    } catch (error) {
+      toast.error(selectedNote ? 'Failed to update note' : 'Failed to create note');
     }
   };
 
@@ -126,7 +145,7 @@ const Notes = () => {
   const addTagToItem = (itemIndex: number, tagName: string) => {
     if (tagName.trim()) {
       const newTag: any = {
-          name: tagName.trim(),
+        name: tagName.trim(),
       };
 
       setNoteForm(prev => ({
@@ -153,26 +172,6 @@ const Notes = () => {
     }));
   };
 
-  const toggleTagStatus = async (noteId: string, itemIndex: number, tagIndex: number) => {
-    const note = notes.find(n => n._id === noteId);
-    if (!note) return;
-
-    const updatedItems = [...note.items];
-    const tag = updatedItems[itemIndex].tags[tagIndex];
-    
-    updatedItems[itemIndex].tags[tagIndex] = {
-      ...tag,
-    };
-
-    await handleUpdateNote(noteId, { items: updatedItems });
-  };
-
-  const copyTagsToClipboard = (tags: NoteTag[]) => {
-    const tagNames = tags.map(tag => tag.name);
-    navigator.clipboard.writeText(tagNames.join(', '));
-    toast.success('Tags copied to clipboard');
-  };
-
   const renderNote = (note: Note) => {
     const isExpanded = expandedNotes.has(note._id!);
 
@@ -188,9 +187,9 @@ const Notes = () => {
                     className="p-1 hover:bg-zinc-800 rounded"
                   >
                     {isExpanded ? (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-4 h-4 text-white" />
                     ) : (
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-4 h-4 text-white" />
                     )}
                   </button>
                 )}
@@ -212,35 +211,17 @@ const Notes = () => {
                         <span className="text-gray-300">
                           {item.description}
                         </span>
-                        {item.tags.length > 0 && (
-                          <button
-                            onClick={() => copyTagsToClipboard(item.tags)}
-                            className="p-1 hover:bg-zinc-700 rounded-lg text-gray-400 hover:text-white"
-                            title="Copy tags"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
-                        )}
                       </div>
                       {item.tags && item.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {item.tags.map((tag, tagIndex) => (
-                            <button
+                            <span
                               key={tagIndex}
-                              onClick={() => toggleTagStatus(note._id!, itemIndex, tagIndex)}
-                              className={`px-2 py-1 text-xs ${
-                                tag.done 
-                                  ? 'bg-green-500/20 text-green-400' 
-                                  : 'bg-red-500/20 text-red-400'
-                              } rounded-full flex items-center gap-1 hover:bg-opacity-80 transition-colors`}
+                              className="px-2 py-1 text-xs bg-zinc-700 text-gray-300 rounded-full flex items-center gap-1"
                             >
-                              {tag.done ? (
-                                <Check className="w-3 h-3" />
-                              ) : (
-                                <Tag className="w-3 h-3" />
-                              )}
+                              <Tag className="w-3 h-3" />
                               {tag.name}
-                            </button>
+                            </span>
                           ))}
                         </div>
                       )}
@@ -258,9 +239,9 @@ const Notes = () => {
                 }`}
               >
                 {note.isArchived ? (
-                  <ArchiveRestore className="w-4 h-4" />
+                  <ArchiveRestore className="w-4 h-4 text-white" />
                 ) : (
-                  <Archive className="w-4 h-4" />
+                  <Archive className="w-4 h-4 text-white" />
                 )}
               </button>
               <button
@@ -274,7 +255,7 @@ const Notes = () => {
                 }}
                 className="p-2 hover:bg-zinc-800 rounded-lg"
               >
-                <Edit className="w-4 h-4" />
+                <Edit className="w-4 h-4 text-white" />
               </button>
               <button
                 onClick={() => {
@@ -295,7 +276,7 @@ const Notes = () => {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Notes</h1>
+        <h1 className="text-3xl font-bold text-white">Tasks</h1>
         <button
           onClick={() => {
             setSelectedNote(null);
@@ -325,7 +306,7 @@ const Notes = () => {
 
       {showNoteModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-zinc-900 rounded-lg p-6 max-w-2xl w-full">
+          <div className="bg-zinc-900 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">
                 {selectedNote ? 'Edit Note' : 'Add New Note'}
@@ -337,139 +318,133 @@ const Notes = () => {
                 <X className="w-5 h-5 text-white" />
               </button>
             </div>
-            <form onSubmit={handleCreateNote} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Heading
-                </label>
-                <input
-                  type="text"
-                  value={noteForm.heading}
-                  onChange={(e) => setNoteForm(prev => ({ ...prev, heading: e.target.value }))}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
-                  required
-                />
-              </div>
+            <form onSubmit={handleSubmitNote} className="flex flex-col flex-1 overflow-hidden">
+              <div className="space-y-6 flex-1 overflow-y-auto pr-2 pb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Heading
+                  </label>
+                  <input
+                    type="text"
+                    value={noteForm.heading}
+                    onChange={(e) => setNoteForm(prev => ({ ...prev, heading: e.target.value }))}
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Items
-                </label>
-                <div className="space-y-4">
-                  {noteForm.items.map((item, index) => (
-                    <div key={index} className="bg-zinc-800 rounded-lg p-4">
-                      <div className="flex items-center gap-2">
-                        <span className="flex-1 text-gray-300">{item.description}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          className="p-1 hover:bg-red-500/20 text-red-400 rounded"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div className="mt-3">
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {item.tags.map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className={`px-2 py-1 text-xs ${
-                                tag.done 
-                                  ? 'bg-green-500/20 text-green-400' 
-                                  : 'bg-red-500/20 text-red-400'
-                              } rounded-full flex items-center gap-1`}
-                            >
-                              {tag.done ? (
-                                <Check className="w-3 h-3" />
-                              ) : (
-                                <Tag className="w-3 h-3" />
-                              )}
-                              {tag.name}
-                              <button
-                                type="button"
-                                onClick={() => removeTagFromItem(index, tag.name)}
-                                className="ml-1 hover:text-red-400"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </span>
-                          ))}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Items
+                  </label>
+                  <div className="space-y-4">
+                    {noteForm.items.map((item, index) => (
+                      <div key={index} className="bg-zinc-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2">
+                          <span className="flex-1 text-gray-300">{item.description}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(index)}
+                            className="p-1 hover:bg-red-500/20 text-red-400 rounded"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
 
-                        {selectedItemIndex === index && showTagInput ? (
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={newTag}
-                              onChange={(e) => setNewTag(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTagToItem(index, newTag))}
-                              placeholder="Add tag"
-                              className="flex-1 px-3 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded-md text-white focus:outline-none focus:border-red-500"
-                              autoFocus
-                              list="available-tags"
-                            />
-                            <datalist id="available-tags">
-                              {Array.from(availableTags).map((tag) => (
-                                <option key={tag} value={tag} />
-                              ))}
-                            </datalist>
-                            <button
-                              type="button"
-                              onClick={() => addTagToItem(index, newTag)}
-                              className="px-3 py-1 bg-zinc-700 rounded-md hover:bg-zinc-600 text-sm"
-                            >
-                              Add
-                            </button>
+                        <div className="mt-3">
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {item.tags.map((tag, tagIndex) => (
+                              <span
+                                key={tagIndex}
+                                className="px-2 py-1 text-xs bg-zinc-700 text-gray-300 rounded-full flex items-center gap-1"
+                              >
+                                <Tag className="w-3 h-3" />
+                                {tag.name}
+                                <button
+                                  type="button"
+                                  onClick={() => removeTagFromItem(index, tag.name)}
+                                  className="ml-1 hover:text-red-400"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+
+                          {selectedItemIndex === index && showTagInput ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={newTag}
+                                onChange={(e) => setNewTag(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTagToItem(index, newTag))}
+                                placeholder="Add tag"
+                                className="flex-1 px-3 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded-md text-white focus:outline-none focus:border-red-500"
+                                autoFocus
+                                list="available-tags"
+                              />
+                              <datalist id="available-tags">
+                                {Array.from(availableTags).map((tag) => (
+                                  <option key={tag} value={tag} />
+                                ))}
+                              </datalist>
+                              <button
+                                type="button"
+                                onClick={() => addTagToItem(index, newTag)}
+                                className="px-3 py-1 bg-zinc-700 rounded-md hover:bg-zinc-600 text-sm"
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedItemIndex(null);
+                                  setShowTagInput(false);
+                                  setNewTag('');
+                                }}
+                                className="p-1 hover:bg-red-500/20 text-red-400 rounded"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               type="button"
                               onClick={() => {
-                                setSelectedItemIndex(null);
-                                setShowTagInput(false);
-                                setNewTag('');
+                                setSelectedItemIndex(index);
+                                setShowTagInput(true);
                               }}
-                              className="p-1 hover:bg-red-500/20 text-red-400 rounded"
+                              className="flex items-center gap-1 text-sm text-gray-400 hover:text-white"
                             >
-                              <X className="w-4 h-4" />
+                              <PlusCircle className="w-4 h-4" />
+                              Add tag
                             </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedItemIndex(index);
-                              setShowTagInput(true);
-                            }}
-                            className="flex items-center gap-1 text-sm text-gray-400 hover:text-white"
-                          >
-                            <PlusCircle className="w-4 h-4" />
-                            Add tag
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newItem}
+                        onChange={(e) => setNewItem(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())}
+                        placeholder="Add new item"
+                        className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={addItem}
+                        className="px-4 py-2 bg-zinc-800 rounded-md hover:bg-zinc-700 text-white"
+                      >
+                        Add
+                      </button>
                     </div>
-                  ))}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newItem}
-                      onChange={(e) => setNewItem(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())}
-                      placeholder="Add new item"
-                      className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:border-red-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={addItem}
-                      className="px-4 py-2 bg-zinc-800 rounded-md hover:bg-zinc-700 text-white"
-                    >
-                      Add
-                    </button>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4">
+              <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setShowNoteModal(false)}

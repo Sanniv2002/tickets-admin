@@ -212,7 +212,7 @@ export const createNote = async (note: Partial<Note>): Promise<Note> => {
 };
 
 export const updateNote = async (id: string, note: Partial<Note>): Promise<Note> => {
-  const response = await api.put(`/admin/notes/${id}`, note);
+  const response = await api.patch(`/admin/notes/${id}`, note);
   return response.data;
 };
 
