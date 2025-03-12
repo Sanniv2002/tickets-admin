@@ -274,8 +274,8 @@ const Notes = () => {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 lg:p-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <h1 className="text-3xl font-bold text-white">Tasks</h1>
         <button
           onClick={() => {
@@ -283,7 +283,7 @@ const Notes = () => {
             setNoteForm({ heading: '', items: [] });
             setShowNoteModal(true);
           }}
-          className="flex items-center px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          className="w-full lg:w-auto flex items-center justify-center px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
         >
           <Plus className="w-5 h-5 mr-2" />
           Add Note
