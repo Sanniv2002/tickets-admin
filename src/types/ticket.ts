@@ -16,6 +16,7 @@ export interface Ticket {
   score?: number;
   ticket_number?: string;
   entry_marked?: boolean;
+  price?: number;
 }
 
 export interface PaginatedResponse {
@@ -38,9 +39,9 @@ export interface Analytics {
   completedTicketsStage2: number;
   verifiedPayments: number;
   entriesMarked: number;
+  totalRevenue: number;
   timestamp: string;
 }
-
 
 export interface TicketPricing {
   id: string,

@@ -17,8 +17,8 @@ const SkeletonCard = () => (
 );
 
 const SkeletonStats = () => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    {[1, 2, 3].map((i) => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    {[1, 2, 3, 4].map((i) => (
       <div key={i} className="bg-zinc-900 rounded-lg p-6 animate-pulse">
         <div className="w-12 h-12 bg-zinc-800 rounded-lg mb-4"></div>
         <div className="h-6 w-16 bg-zinc-800 rounded mb-2"></div>
@@ -190,6 +190,12 @@ const Dashboard = () => {
       icon: Users,
       color: 'bg-purple-500/20 text-purple-400',
     },
+    {
+      title: 'Total Revenue',
+      value: `₹${(analytics?.totalRevenue || 0).toLocaleString('en-IN')}`,
+      icon: IndianRupee,
+      color: 'bg-yellow-500/20 text-yellow-400',
+    },
   ];
 
   const activeOffer = offers.find(offer => offer.active);
@@ -208,7 +214,7 @@ const Dashboard = () => {
         </>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
               <div key={index} className="bg-zinc-900 rounded-lg p-6">
                 <div className={`inline-flex p-3 rounded-lg ${stat.color} mb-4`}>
