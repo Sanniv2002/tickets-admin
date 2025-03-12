@@ -6,7 +6,7 @@ import { Ticket, PaginatedResponse, User } from '../types/ticket';
 import {
   X, TicketIcon, CreditCard,
   Search, ChevronLeft, ChevronRight,
-  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen
+  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen, IndianRupee
 } from 'lucide-react';
 
 type FilterType = 'all' | 'given' | 'unverified';
@@ -48,6 +48,7 @@ const TicketList = () => {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [_, setUser] = useState<User | null>(null);
+  const [pageInput, setPageInput] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,6 +58,10 @@ const TicketList = () => {
     fetchUser()
     fetchTickets();
   }, [page, activeSearch]);
+
+  useEffect(() => {
+    setPageInput(page.toString());
+  }, [page]);
 
   const fetchUser = async () => {
     const userData = await whoami();
@@ -123,6 +128,25 @@ const TicketList = () => {
     if (e.key === 'Enter') {
       setActiveSearch(searchTerm);
       setSearchParams({ page: '1' });
+    }
+  };
+
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+      setPageInput(value);
+    }
+  };
+
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const newPage = parseInt(pageInput);
+      if (newPage >= 1 && newPage <= totalPages) {
+        setSearchParams({ page: newPage.toString() });
+      } else {
+        setPageInput(page.toString());
+        toast.error(`Please enter a page number between 1 and ${totalPages}`);
+      }
     }
   };
 
@@ -362,6 +386,12 @@ const TicketList = () => {
                           Ticket: {ticket.ticket_number}
                         </span>
                       )}
+                      {ticket.price && (
+                        <span className="px-2 py-1 rounded text-sm bg-blue-500/20 text-blue-400 flex items-center">
+                          <IndianRupee className="w-3 h-3 mr-1" />
+                          Price: ₹{ticket.price}
+                        </span>
+                      )}
                       {activeSearch && ticket.score && (
                         <span className="px-2 py-1 rounded text-sm bg-blue-500/20 text-blue-400">
                           Match Score: {(ticket.score * 100).toFixed(1)}%
@@ -517,9 +547,18 @@ const TicketList = () => {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="text-gray-400">
-                Page {page} of {totalPages}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">Page</span>
+                <input
+                  type="text"
+                  value={pageInput}
+                  onChange={handlePageInputChange}
+                  onKeyDown={handlePageInputKeyDown}
+                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-center text-white focus:outline-none focus:border-red-500"
+                  placeholder="Page"
+                />
+                <span className="text-gray-400">of {totalPages}</span>
+              </div>
               <button
                 onClick={() => setSearchParams({ page: String(page + 1) })}
                 disabled={page >= totalPages}
