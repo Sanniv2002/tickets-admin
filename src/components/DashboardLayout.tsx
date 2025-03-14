@@ -111,7 +111,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <NavLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavLink to="/tickets" icon={Ticket} label="Tickets" />
             <NavLink to="/attendees" icon={Users} label="Attendees" />
-            <NavLink to="/notes" icon={NotebookText} label="Tasks" />
+            {/* <NavLink to="/notes" icon={NotebookText} label="Tasks" /> */}
             {/* <NavLink to="/bills" icon={Receipt} label="Bills" /> */}
             {user?.isSuperAdmin && (
               <NavLink to="/admin-management" icon={UserPlus} label="Admin Management" />
