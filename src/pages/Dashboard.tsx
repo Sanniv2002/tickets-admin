@@ -174,7 +174,7 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Tickets',
-      value: analytics?.totalTickets || 0,
+      value: analytics?.completedTicketsStage2 || 0,
       icon: Ticket,
       color: 'bg-blue-500/20 text-blue-400',
     },
