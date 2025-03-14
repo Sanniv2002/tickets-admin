@@ -36,10 +36,11 @@ export const logout = async () => {
   }
 };
 
-export const getTickets = async (page: number): Promise<PaginatedResponse> => {
+export const getTickets = async (page: number, filter?: object): Promise<PaginatedResponse> => {
   const response = await api.get(`/admin/tickets`, {
     params: {
       page,
+      ...filter
     },
   });
   return response.data;

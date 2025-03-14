@@ -9,7 +9,7 @@ import {
   Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen, IndianRupee
 } from 'lucide-react';
 
-type FilterType = 'all' | 'given' | 'unverified';
+type FilterType = 'all' | 'paid' | 'not_paid';
 
 const SkeletonTicket = () => (
   <div className="bg-zinc-900 rounded-lg p-6 border-l-4 border-yellow-500 animate-pulse">
@@ -55,9 +55,9 @@ const TicketList = () => {
   const page = parseInt(searchParams.get('page') || '1');
 
   useEffect(() => {
-    fetchUser()
+    fetchUser();
     fetchTickets();
-  }, [page, activeSearch]);
+  }, [page, activeSearch, activeFilter]);
 
   useEffect(() => {
     setPageInput(page.toString());
@@ -94,17 +94,29 @@ const TicketList = () => {
     };
   }, []);
 
+  const getFilterParams = () => {
+    switch (activeFilter) {
+      case 'paid':
+        return { filter: 'stage:2' };
+      case 'not_paid':
+        return { filter: 'stage:1' };
+      default:
+        return {};
+    }
+  };
+
   const fetchTickets = async () => {
     try {
       setLoading(true);
       let data: PaginatedResponse;
+      const filterParams = getFilterParams();
 
       if (activeSearch) {
-        data = await searchTickets(activeSearch);
+        data = await searchTickets(activeSearch, filterParams);
         const sortedTickets = [...data.tickets].sort((a, b) => (b.score || 0) - (a.score || 0));
         setTickets(sortedTickets);
       } else {
-        data = await getTickets(page);
+        data = await getTickets(page, filterParams);
         setTickets(data.tickets);
       }
 
@@ -212,23 +224,12 @@ const TicketList = () => {
     }
   };
 
-  const filteredTickets = tickets?.filter(ticket => {
-    switch (activeFilter) {
-      case 'given':
-        return ticket.ticket_given;
-      case 'unverified':
-        return !ticket.payment_verified;
-      default:
-        return true;
-    }
-  });
-
   const getFilterLabel = (filter: FilterType) => {
     switch (filter) {
-      case 'given':
-        return 'Given Tickets';
-      case 'unverified':
-        return 'Unverified Payments';
+      case 'paid':
+        return 'Paid Tickets';
+      case 'not_paid':
+        return 'Unpaid Tickets';
       default:
         return 'All Tickets';
     }
@@ -303,12 +304,13 @@ const TicketList = () => {
               {isFilterOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-zinc-800 ring-1 ring-black ring-opacity-5 z-10">
                   <div className="py-1">
-                    {(['all', 'given', 'unverified'] as FilterType[]).map((filter) => (
+                    {(['all', 'paid', 'not_paid'] as FilterType[]).map((filter) => (
                       <button
                         key={filter}
                         onClick={() => {
                           setActiveFilter(filter);
                           setIsFilterOpen(false);
+                          setSearchParams({ page: '1' });
                         }}
                         className={`block w-full text-left px-4 py-2 text-sm hover:bg-zinc-700 ${activeFilter === filter ? 'bg-zinc-700' : ''
                           }`}
@@ -346,7 +348,7 @@ const TicketList = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {filteredTickets?.map((ticket) => (
+            {tickets?.map((ticket) => (
               <div
                 key={ticket._id}
                 className={`bg-zinc-900 rounded-lg p-6 ${ticket.stage === '2' ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-500'
