@@ -220,3 +220,14 @@ export const updateNote = async (id: string, note: Partial<Note>): Promise<Note>
 export const deleteNote = async (id: string): Promise<void> => {
   await api.delete(`/admin/notes/${id}`);
 };
+
+export const getArchivedTickets = async (page: number): Promise<PaginatedResponse> => {
+  const response = await api.get(`/admin/tickets/archived`, {
+    params: { page },
+  });
+  return response.data;
+};
+
+export const archiveTicket = async (ticketId: string, archive: boolean): Promise<void> => {
+  await api.patch(`/admin/tickets/${ticketId}/archive`, { archive });
+};

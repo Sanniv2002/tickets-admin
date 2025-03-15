@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, whoami } from '../services/api';
+import { getTickets, verifyPayment, markTicketGiven, searchTickets, uploadPaymentProof, markEntry, whoami, archiveTicket } from '../services/api';
 import { Ticket, PaginatedResponse, User } from '../types/ticket';
 import {
   X, TicketIcon, CreditCard,
   Search, ChevronLeft, ChevronRight,
-  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen, IndianRupee
+  Loader2, Eye, XCircle, Filter, ChevronDown, Hash, Upload, DoorOpen, IndianRupee,
+  Archive, ArchiveRestore
 } from 'lucide-react';
 
 type FilterType = 'all' | 'paid' | 'not_paid';
@@ -47,7 +48,7 @@ const TicketList = () => {
   const [ticketNumberInput, setTicketNumberInput] = useState<string>('');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
-  const [_, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [pageInput, setPageInput] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -221,6 +222,28 @@ const TicketList = () => {
       toast.error('Failed to mark entry');
     } finally {
       setLoadingState(ticketId, false);
+    }
+  };
+
+  const handleArchiveTicket = async (ticketId: string, archive: boolean) => {
+    if (!user?.isSuperAdmin) {
+      toast.error('Only superadmins can archive tickets');
+      return;
+    }
+
+    try {
+      setLoadingState(`archive-${ticketId}`, true);
+      await archiveTicket(ticketId, archive);
+      toast.success(archive ? 'Ticket archived successfully' : 'Ticket unarchived successfully');
+      setTickets((prevTickets) =>
+        prevTickets.map((ticket) =>
+          ticket._id === ticketId ? { ...ticket, is_archived: archive } : ticket
+        )
+      );
+    } catch (error) {
+      toast.error(archive ? 'Failed to archive ticket' : 'Failed to unarchive ticket');
+    } finally {
+      setLoadingState(`archive-${ticketId}`, false);
     }
   };
 
@@ -401,7 +424,37 @@ const TicketList = () => {
                       )}
                     </div>
                   </div>
+                  
+                  {user?.isSuperAdmin && (
+                    <button
+                      onClick={() => handleArchiveTicket(ticket._id!, !ticket.is_archived)}
+                      disabled={loadingStates[`archive-${ticket._id}`]}
+                      className={`p-2 rounded-lg transition-colors ${
+                        ticket.is_archived 
+                          ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' 
+                          : 'bg-zinc-800 hover:bg-zinc-700'
+                      }`}
+                      title={ticket.is_archived ? 'Unarchive Ticket' : 'Archive Ticket'}
+                    >
+                      {loadingStates[`archive-${ticket._id}`] ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : ticket.is_archived ? (
+                        <ArchiveRestore className="w-5 h-5" />
+                      ) : (
+                        <Archive className="w-5 h-5" />
+                      )}
+                    </button>
+                  )}
                 </div>
+
+                {ticket.is_archived && (
+                  <div className="mt-4 bg-purple-500/10 border border-purple-500/20 rounded-lg p-2">
+                    <p className="text-sm text-purple-400 flex items-center gap-2">
+                      <Archive className="w-4 h-4" />
+                      This ticket has been archived
+                    </p>
+                  </div>
+                )}
 
                 <div className="mt-4 flex flex-wrap gap-4">
                   {!ticket.payment_proof && ticket.stage === '1' && (

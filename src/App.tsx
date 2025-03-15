@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import TicketList from './pages/TicketList';
+import ArchivedTickets from './pages/ArchivedTickets';
 import Attendees from './pages/Attendees';
 import AdminManagement from './pages/AdminManagement';
 import Onboarding from './pages/Onboarding';
@@ -36,6 +37,16 @@ function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <TicketList />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/archived-tickets"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ArchivedTickets />
               </DashboardLayout>
             </ProtectedRoute>
           }

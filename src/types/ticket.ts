@@ -17,6 +17,7 @@ export interface Ticket {
   ticket_number?: string;
   entry_marked?: boolean;
   price?: number;
+  is_archived?: boolean;
 }
 
 export interface PaginatedResponse {
