@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus, Crown, Archive } from 'lucide-react';
+import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus, Crown, Archive, Bell } from 'lucide-react';
 import { logout, whoami } from '../services/api';
+import { useNotifications } from '../context/NotificationContext';
 
 const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<{ isSuperAdmin: boolean } | null>(null);
+  const { unreadCount } = useNotifications();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -37,14 +39,21 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
     window.location.href = '/mgmt';
   };
 
-  const NavLink = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => (
+  const NavLink = ({ to, icon: Icon, label, showBadge = false }: { to: string; icon: any; label: string; showBadge?: boolean }) => (
     <Link
       to={to}
       className={`flex items-center gap-4 px-4 py-3 text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-300 ${
         location.pathname === to ? 'bg-zinc-800 text-white' : ''
       }`}
     >
-      <Icon className="w-5 h-5 min-w-[20px]" />
+      <div className="relative">
+        <Icon className="w-5 h-5 min-w-[20px]" />
+        {showBadge && unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </div>
       <span className={`transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>
         {label}
       </span>
@@ -112,8 +121,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <NavLink to="/tickets" icon={Ticket} label="Tickets" />
             <NavLink to="/archived-tickets" icon={Archive} label="Archived Tickets" />
             <NavLink to="/attendees" icon={Users} label="Attendees" />
-            {/* <NavLink to="/notes" icon={NotebookText} label="Tasks" /> */}
-            {/* <NavLink to="/bills" icon={Receipt} label="Bills" /> */}
+            <NavLink to="/notifications" icon={Bell} label="Notifications" showBadge />
             {user?.isSuperAdmin && (
               <NavLink to="/admin-management" icon={UserPlus} label="Admin Management" />
             )}

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Bill, Note, Offer, PaginatedBillsResponse, PaginatedResponse, TicketPricing } from "../types/ticket";
+import { Bill, Note, NotificationResponse, Offer, PaginatedBillsResponse, PaginatedResponse, TicketPricing } from "../types/ticket";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -230,4 +230,15 @@ export const getArchivedTickets = async (page: number): Promise<PaginatedRespons
 
 export const archiveTicket = async (ticketId: string, archive: boolean): Promise<void> => {
   await api.patch(`/admin/tickets/${ticketId}/archive`, { archive });
+};
+
+export const getNotifications = async (page: number): Promise<NotificationResponse> => {
+  const response = await api.get('/admin/notifications', {
+    params: { page }
+  });
+  return response.data;
+};
+
+export const markNotificationsAsRead = async (notificationIds: string[]): Promise<void> => {
+  await api.patch('/admin/notifications', { notificationIds });
 };

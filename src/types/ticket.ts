@@ -100,3 +100,25 @@ export interface Note {
   updatedAt: string;
   isArchived: boolean;
 }
+
+export interface Notification {
+  _id: string;
+  ts: string;
+  message: string;
+  read_by: string[];
+  read: boolean;
+}
+
+export interface NotificationContextType {
+  notifications: Notification[];
+  unreadCount: number;
+  markAsRead: (ids: string[]) => void;
+  addNotification: (notification: Notification) => void;
+}
+
+export interface NotificationResponse {
+  total: number;
+  page: number;
+  limit: number;
+  notifications: Notification[];
+}
