@@ -24,8 +24,8 @@ body {
 
 @keyframes highlight {
   0% {
-    background-color: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.4);
+    background-color: rgba(82, 82, 91, 0.3);
+    border-color: rgba(82, 82, 91, 0.5);
   }
   100% {
     background-color: rgb(24, 24, 27);

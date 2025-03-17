@@ -31,13 +31,14 @@ const Notifications = () => {
   }, [page]);
 
   useEffect(() => {
-    const unreadIds = notifications
-      .filter(notification => !notification.read)
-      .map(notification => notification._id);
+    const markAllAsRead = async () => {
+      const unreadIds = notifications
+        .filter(notification => !notification.read)
+        .map(notification => notification._id);
 
-    if (unreadIds.length > 0) {
-      markNotificationsAsRead(unreadIds)
-        .then(() => {
+      if (unreadIds.length > 0) {
+        try {
+          await markNotificationsAsRead(unreadIds);
           markAsRead(unreadIds);
           setRecentlyRead(new Set(unreadIds));
           setNotifications(prev => 
@@ -48,14 +49,19 @@ const Notifications = () => {
             )
           );
 
-          // Clear the recently read status after animation
           setTimeout(() => {
             setRecentlyRead(new Set());
           }, 2000);
-        })
-        .catch(console.error);
+        } catch (error) {
+          console.error('Failed to mark notifications as read:', error);
+        }
+      }
+    };
+
+    if (notifications.length > 0) {
+      markAllAsRead();
     }
-  }, []);
+  }, [notifications]);
 
   const fetchNotifications = async () => {
     try {
@@ -82,16 +88,16 @@ const Notifications = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-white mb-8">Notifications</h1>
+    <div className="p-4 lg:p-8">
+      <h1 className="text-2xl lg:text-3xl font-bold text-white mb-8">Notifications</h1>
 
-      <div className="space-y-4 max-w-3xl">
+      <div className="max-w-3xl mx-auto space-y-4">
         {notifications.map((notification, index) => {
           const isRecentlyRead = recentlyRead.has(notification._id);
           
@@ -101,38 +107,38 @@ const Notifications = () => {
               ref={index === notifications.length - 1 ? lastNotificationRef : null}
               className={`p-4 rounded-lg transition-all duration-300 ${
                 notification.read 
-                  ? 'bg-zinc-900' 
-                  : 'bg-red-500/5 border-2 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                  ? 'bg-zinc-900/80' 
+                  : 'bg-zinc-800/80 border border-zinc-700'
               } ${
                 isRecentlyRead ? 'animate-highlight' : ''
-              }`}
+              } hover:bg-zinc-800 group`}
             >
               <div className="flex items-start gap-4">
                 <div 
                   className={`p-2 rounded-lg transition-colors ${
                     notification.read 
-                      ? 'bg-zinc-800' 
-                      : 'bg-red-500/20 animate-pulse'
+                      ? 'bg-zinc-800 group-hover:bg-zinc-700' 
+                      : 'bg-zinc-700 group-hover:bg-zinc-600'
                   }`}
                 >
                   <Bell className={`w-5 h-5 ${
-                    notification.read ? 'text-gray-400' : 'text-red-400'
+                    notification.read ? 'text-zinc-400' : 'text-zinc-300'
                   }`} />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className={`${
-                    notification.read ? 'text-gray-200' : 'text-white font-medium'
-                  }`}>
+                    notification.read ? 'text-zinc-300' : 'text-white font-medium'
+                  } break-words`}>
                     {notification.message}
                   </p>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-zinc-500 mt-1">
                     {format(new Date(notification.ts), 'MMM d, yyyy h:mm a')}
                   </p>
                 </div>
                 {isRecentlyRead && (
-                  <div className="animate-fadeOut flex items-center gap-1 text-green-400 bg-green-500/10 px-2 py-1 rounded">
+                  <div className="animate-fadeOut flex items-center gap-1 text-zinc-400 bg-zinc-700/50 px-2 py-1 rounded text-sm">
                     <Check className="w-4 h-4" />
-                    <span className="text-sm">Read</span>
+                    <span>Read</span>
                   </div>
                 )}
               </div>
@@ -142,18 +148,18 @@ const Notifications = () => {
 
         {loadingMore && (
           <div className="flex justify-center py-4">
-            <Loader2 className="w-6 h-6 animate-spin text-red-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
           </div>
         )}
 
         {!hasMore && notifications.length > 0 && (
-          <p className="text-center text-gray-400 py-4">No more notifications</p>
+          <p className="text-center text-zinc-500 py-4">No more notifications</p>
         )}
 
         {notifications.length === 0 && (
-          <div className="text-center py-8">
-            <Bell className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-            <p className="text-gray-400">No notifications yet</p>
+          <div className="text-center py-12">
+            <Bell className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+            <p className="text-zinc-400">No notifications yet</p>
           </div>
         )}
       </div>

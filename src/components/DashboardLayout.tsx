@@ -49,9 +49,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="relative">
         <Icon className="w-5 h-5 min-w-[20px]" />
         {showBadge && unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full" />
         )}
       </div>
       <span className={`transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 hidden' : 'opacity-100'}`}>

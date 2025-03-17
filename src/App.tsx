@@ -15,10 +15,14 @@ import DashboardLayout from './components/DashboardLayout';
 import ScrollToTop from './components/ScrollToTop';
 import { NotificationProvider } from './context/NotificationContext';
 
-function App() {
+interface AppProps {
+  websocket: WebSocket;
+}
+
+function App({ websocket }: AppProps) {
   return (
     <BrowserRouter>
-      <NotificationProvider>
+      <NotificationProvider websocket={websocket}>
         <ScrollToTop />
         <Toaster position="top-right" />
         <Routes>

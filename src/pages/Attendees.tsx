@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getAttendees, markEntry, searchAttendees } from '../services/api';
 import { Ticket } from '../types/ticket';
-import { ChevronLeft, ChevronRight, Loader2, DoorOpen, Search, XCircle, Hash } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, DoorOpen, Search, XCircle, Hash, Brain } from 'lucide-react';
 
 const SkeletonTicket = () => (
   <div className="bg-zinc-900 rounded-lg p-4 animate-pulse">
@@ -23,6 +23,23 @@ const SkeletonTicket = () => (
         <div className="h-8 w-32 bg-zinc-800 rounded"></div>
       </div>
     </div>
+  </div>
+);
+
+const EmptyState = () => (
+  <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="relative mb-6">
+      <div className="w-24 h-24 bg-zinc-800 rounded-full flex items-center justify-center">
+        <Brain className="w-12 h-12 text-zinc-600" />
+      </div>
+      <div className="absolute -top-2 -right-2 w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center animate-bounce">
+        <span className="text-lg">💭</span>
+      </div>
+    </div>
+    <h3 className="text-xl font-semibold text-white mb-2">No Attendees Found</h3>
+    <p className="text-gray-400 max-w-sm">
+      Looks like everyone's still thinking about it! Check back later for updates.
+    </p>
   </div>
 );
 
@@ -70,7 +87,7 @@ const Attendees = () => {
         setAttendees(sortedAttendees);
       } else {
         data = await getAttendees(page);
-        setAttendees(data.tickets);
+        setAttendees(data.tickets || []);
       }
       
       setTotalAttendees(data.total);
@@ -157,6 +174,8 @@ const Attendees = () => {
             <SkeletonTicket key={i} />
           ))}
         </div>
+      ) : attendees.length === 0 ? (
+        <EmptyState />
       ) : (
         <>
           <div className="space-y-4">
