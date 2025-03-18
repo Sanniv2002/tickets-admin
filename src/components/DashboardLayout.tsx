@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Ticket, LogOut, Menu, X, ChevronLeft, ChevronRight, Users, UserPlus, Crown, Archive, Bell } from 'lucide-react';
 import { logout, whoami } from '../services/api';
 import { useNotifications } from '../context/NotificationContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -48,48 +48,28 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         to={to}
         className="relative group"
       >
-        <motion.div
-          className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors duration-300 ${
+        <div
+          className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors duration-200 ${
             isActive ? 'bg-zinc-800 text-white' : 'text-gray-400 hover:text-white'
           }`}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
         >
           <div className="relative">
-            <Icon className={`w-5 h-5 min-w-[20px] transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+            <Icon className={`w-5 h-5 min-w-[20px] transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
             {showBadge && unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
             )}
           </div>
-          <AnimatePresence mode="wait">
-            {isSidebarOpen && (
-              <motion.span
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="whitespace-nowrap"
-              >
-                {label}
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {isSidebarOpen && (
+            <span className="whitespace-nowrap">{label}</span>
+          )}
           {!isSidebarOpen && (
             <div className="fixed left-[4.5rem] px-2 py-1 bg-zinc-800 rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap">
               {label}
             </div>
           )}
-        </motion.div>
+        </div>
         {isActive && (
-          <motion.div
-            layoutId="activeTab"
-            className="absolute inset-y-0 left-0 w-1 bg-red-500 rounded-full"
-            transition={{ 
-              type: "spring", 
-              stiffness: 500, 
-              damping: 30,
-              layout: { duration: 0.2 }
-            }}
-          />
+          <div className="absolute inset-y-0 left-0 w-1 bg-red-500 rounded-full" />
         )}
       </Link>
     );
@@ -98,11 +78,8 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   return (
     <div className={`min-h-screen bg-black ${user?.isSuperAdmin ? 'border-t-2 border-red-600/50' : ''}`}>
       {isMobileMenuOpen && (
-        <motion.div 
+        <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -112,59 +89,41 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
       }`}>
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
-            <motion.h1 
-              className="text-xl font-bold text-red-600"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              TedX Admin
-            </motion.h1>
+            <h1 className="text-xl font-bold text-red-600">TedX Admin</h1>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-zinc-800/50"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </motion.button>
+          </button>
         </div>
       </div>
 
-      <motion.aside
+      <aside
         className={`
           fixed top-0 left-0 z-40 h-full
           bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/80
           border-r border-zinc-800/50
-          transition-all duration-300 ease-in-out
+          transition-all duration-200
           ${isSidebarOpen ? 'w-64' : 'w-20'}
           lg:translate-x-0
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
           ${user?.isSuperAdmin ? 'border-r-2 border-red-600/30' : ''}
         `}
-        initial={false}
       >
         <div className="hidden lg:flex h-16 items-center justify-between px-4">
-          <AnimatePresence mode="wait">
-            {isSidebarOpen && (
-              <motion.div 
-                className="flex items-center gap-2"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <h1 className="text-xl font-bold text-red-600">TedX Admin</h1>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          {isSidebarOpen && (
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-red-600">TedX Admin</h1>
+            </div>
+          )}
+          <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={`p-2 text-gray-400 hover:text-white rounded-lg hover:bg-zinc-800/50 transition-transform ${!isSidebarOpen ? 'w-full flex justify-center' : ''}`}
           >
             {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-          </motion.button>
+          </button>
         </div>
 
         <div className="lg:hidden flex h-16 items-center px-4">
@@ -185,46 +144,29 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
 
         <div className="absolute bottom-4 left-0 right-0 px-3">
-          <AnimatePresence mode="wait">
-            {user?.isSuperAdmin && isSidebarOpen && (
-              <motion.div 
-                className="mb-2 px-4 py-2 bg-red-600/10 rounded-lg border border-red-600/20"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-              >
-                <div className="flex items-center gap-2 text-red-500">
-                  <Crown className="w-4 h-4" />
-                  <span className="text-sm">Super Admin</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <motion.button
+          {user?.isSuperAdmin && isSidebarOpen && (
+            <div className="mb-2 px-4 py-2 bg-red-600/10 rounded-lg border border-red-600/20">
+              <div className="flex items-center gap-2 text-red-500">
+                <Crown className="w-4 h-4" />
+                <span className="text-sm">Super Admin</span>
+              </div>
+            </div>
+          )}
+          <button
             onClick={handleLogout}
             className="w-full flex items-center gap-4 px-4 py-3 text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-colors"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <LogOut className="w-5 h-5 min-w-[20px]" />
-            <AnimatePresence mode="wait">
-              {isSidebarOpen && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                >
-                  Logout
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+            {isSidebarOpen && (
+              <span>Logout</span>
+            )}
+          </button>
         </div>
-      </motion.aside>
+      </aside>
 
       <main
         className={`
-          transition-all duration-300 ease-in-out
+          transition-all duration-200
           ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}
           pt-[4rem] lg:pt-0
           min-h-screen
