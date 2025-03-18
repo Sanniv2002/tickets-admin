@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useEffect, useState } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import TicketList from './pages/TicketList';
@@ -13,6 +14,7 @@ import Notifications from './pages/Notifications';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import ScrollToTop from './components/ScrollToTop';
+import CommandPalette from './components/CommandPalette';
 import { NotificationProvider } from './context/NotificationContext';
 
 interface AppProps {
@@ -20,11 +22,29 @@ interface AppProps {
 }
 
 function App({ websocket }: AppProps) {
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((open) => !open);
+      }
+    };
+
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
+
   return (
     <BrowserRouter>
       <NotificationProvider websocket={websocket}>
         <ScrollToTop />
         <Toaster position="top-right" />
+        <CommandPalette 
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+        />
         <Routes>
           <Route path="/mgmt" element={<Login />} />
           <Route path="/onboarding" element={<Onboarding />} />
